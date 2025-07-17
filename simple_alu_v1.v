@@ -136,6 +136,11 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 				zero = temp_zero[2]; 
 				overlow = temp_overflow[2]; 
 				cout = temp_cout[2];
+		01111: r = temp_mul_r; 
+				negative = temp_negative[2]; 
+				zero = temp_zero[2]; 
+				overlow = temp_overflow[2]; 
+				cout = temp_cout[2];
 		
 		
 		
