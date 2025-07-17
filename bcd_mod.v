@@ -1,0 +1,77 @@
+module bcd_mod(x, out_hundreds, out_tens, out_units); 
+   
+	input [7:0] x; 
+	output [6:0] out_hundreds, out_tens, out_units; 
+	
+	wire [3:0] hundreds_place = (x - x%100)/100; 
+	wire [3:0] tens_place = ((x%100)-(x%10))/10; 
+	wire [3:0] units_place = x%10;
+	
+	ssd_encoder_mod S0(hundreds_place,out_hundreds); 
+	ssd_encoder_mod S1(units_place,out_units); 
+	ssd_encoder_mod S2(tens_place,out_tens); 
+	
+endmodule
+
+//gated D-flip flop 
+module d_flip(clk,d,q,preset,reset); 
+	input d, clk, preset, reset;
+	output reg q; 
+	always @(posedge clk)
+		begin 
+			if(preset)
+				q <= 1; 
+			else if(reset)
+				q <= 0;
+			else	
+				q <= d; 
+		end 
+endmodule 
+
+//  n-bit register
+module shift_register_n(clk,enable,q,preset,reset,load,shift_load,in); 
+	parameter WIDTH = 16; 
+	input clk,enable,shift_load,in; 
+	input [WIDTH-1:0] load, preset, reset; 
+	output [WIDTH-1:0] q; 
+	wire [WIDTH-1:0] mux_1_out; 
+	wire [WIDTH-1:0] mux_2_out; 
+	genvar i; 
+	generate 
+	for (i = 0; i< WIDTH; i = i +1)
+		begin:n_bit_register
+			if(i == 0)
+				begin
+					mux_2_1 MUX(in,q[i],enable,mux_1_out[i]); 
+				end
+			else
+				begin 
+					mux_2_1 MUX(q[i-1],q[i],enable,mux_1_out[i]); 
+				end 
+			mux_2_1 MUX(mux_1_out[i],load[i], shift_load, mux_2_out[i]); 
+			d_flip D(clk,mux_2_out[i],q[i],preset,reset); 
+		end 
+	endgenerate
+	
+endmodule 
+
+module mux_2_1(x1,x2,s,out); 
+	input x1,x2,s; 
+	output out; 
+	assign out = (s&x1) | (~s&x2); 
+endmodule 
+	
+
+//SSD encoder with 4 bit input and default 'E' output for n > 9 
+module ssd_encoder_mod (x,s);
+ input [3:0] x; 
+ output [6:0] s; 
+ 
+ assign s[0] = ~x[3] & ~x[1] & (x[0] ^ x[2]); 
+ assign s[1] = x[3] & (x[2] | x[1]) | x[2] & (x[1] ^ x[0]); 
+ assign s[2] = (x[3] & x[2]) | (x[3] & x[1]) | (~x[2] & x[1] & ~x[0]);
+ assign s[3] = (~x[3] & x[2] & ~x[1] & ~x[0]) | (~x[2] & ~x[1] & x[0]) | (~x[3] & x[2] & x[1] & x[0]); 
+ assign s[4] = (~x[3] & x[0]) | (~x[2] & ~x[1] & x[0]) | (~x[1] & ~x[3] & x[2]); 
+ assign s[5] = (~x[3] & ~x[2] & x[0]) | (~x[3] & ~x[2] & x[1]) | (x[1] & x[0] & ~x[3]); 
+ assign s[6] = (~x[1] & ~x[3] & ~x[2]) | (~x[3] & x[2] & x[1] & x[0]);  
+endmodule

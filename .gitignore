@@ -1,0 +1,67 @@
+# Backup & temp files
+*.bak
+*~
+*.swp
+.#*
+.DS_Store
+
+# Build artifacts
+*.vvp
+*.vcd
+*.o
+*.out
+*.bin
+*.elf
+*.hex
+*.log
+
+# Icarus Verilog
+ivl_*
+
+# ModelSim / QuestaSim
+work/
+transcript
+vsim.wlf
+
+# Vivado
+*.jou
+*.log
+*.str
+*.xml
+*.xpr
+*.xsd
+.cache/
+.hw/
+.sim/
+.runs/
+.srcs/
+.Xil/
+.Xilinx/
+
+# Quartus
+db/
+incremental_db/
+output_files/
+*.qws
+*.rpt
+
+# Yosys
+*.json
+*.blif
+*.il
+*.asc
+yosys_*.log
+
+# IDE files
+.vscode/
+.idea/
+.project
+.settings/
+.ccls-cache/
+.clangd/
+.tags
+.ctags
+__pycache__/
+*.pyc
+
+
