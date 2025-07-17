@@ -67,22 +67,5 @@ module unsigned_divider(x,y,quo,rem);
 endmodule
 
 
-module chained_mux(x,y,s,out); 
-	parameter WIDTH = 7; 
-	input [WIDTH-1:0] x,y; 
-	output [WIDTH-1:0] out; 
-	
-	genvar i; 
-	generate 
-		for(i=0; i< WIDTH; i = i+1) 
-			mux MUX(.x(x[i]),.y(y[i]),.s(s),.out(out[i])); 
-	endgenerate 
-endmodule 
 
-module mux(x,y,s,out);
-	input x,y,s; 
-	output out; 
-	assign out = s?x:y; 
-	
-endmodule
 

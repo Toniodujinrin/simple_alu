@@ -29,31 +29,7 @@ module d_flip(clk,d,q,preset,reset);
 endmodule 
 
 //  n-bit register
-module shift_register_n(clk,enable,q,preset,reset,load,shift_load,in); 
-	parameter WIDTH = 16; 
-	input clk,enable,shift_load,in; 
-	input [WIDTH-1:0] load, preset, reset; 
-	output [WIDTH-1:0] q; 
-	wire [WIDTH-1:0] mux_1_out; 
-	wire [WIDTH-1:0] mux_2_out; 
-	genvar i; 
-	generate 
-	for (i = 0; i< WIDTH; i = i +1)
-		begin:n_bit_register
-			if(i == 0)
-				begin
-					mux_2_1 MUX(in,q[i],enable,mux_1_out[i]); 
-				end
-			else
-				begin 
-					mux_2_1 MUX(q[i-1],q[i],enable,mux_1_out[i]); 
-				end 
-			mux_2_1 MUX(mux_1_out[i],load[i], shift_load, mux_2_out[i]); 
-			d_flip D(clk,mux_2_out[i],q[i],preset,reset); 
-		end 
-	endgenerate
-	
-endmodule 
+
 
 module mux_2_1(x1,x2,s,out); 
 	input x1,x2,s; 
