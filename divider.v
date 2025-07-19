@@ -3,7 +3,7 @@ module divider(x,y,quo,rem,invalid_flag, negative, zero, cout, overflow);
 	
 	input [WIDTH-1:0] x,y; 
 	output [WIDTH-1:0] quo, rem; 
-	inpuy invalid_flag; 
+	output invalid_flag, negative, zero, cout, overflow; 
 	
 	wire [WIDTH-1:0] unsigned_x; 
 	wire [WIDTH-1:0] unsigned_y; 
@@ -43,7 +43,7 @@ module unsigned_divider(x,y,quo,rem);
 	genvar i,j; 
 	generate 
 		for (i = 0; i < WIDTH; i = i + 1)
-			begin 
+			begin: DIVIDER_BLOCK
 				if(i == 0)
 					begin 
 						simplified_signed_adder#(.WIDTH(WIDTH)) S1(.x({zero_bits,x[WIDTH-1]}),.y(y),.add_sub(1'b1),.cout(temp_cout[i]),.s(stage_sum[i])); 
@@ -53,13 +53,13 @@ module unsigned_divider(x,y,quo,rem);
 						simplified_signed_adder#(.WIDTH(WIDTH)) S3(.x({stage_mux_output[i-1],x[WIDTH-i-1]}), .y(y), .add_sub(1'b1),.cout(temp_cout[i]),.s(stage_sum[i])); 
 				else 
 					begin
-						simplified_signed_adder#(.WIDTH(WIDTH) S2(.x({stage_mux_output[i-1],x[WIDTH-i-1]}), .y(y), .add_sub(1'b1),.cout(temp_cout[i]),.s(stage_sum[i])); 
+						simplified_signed_adder#(.WIDTH(WIDTH)) S2(.x({stage_mux_output[i-1],x[WIDTH-i-1]}), .y(y), .add_sub(1'b1),.cout(temp_cout[i]),.s(stage_sum[i])); 
 						chained_mux #(.WIDTH(WIDTH-1)) CM2(.x(stage_mux_output[i-1]),.y(stage_sum[i][WIDTH-2:0]),.s(stage_sum[i][WIDTH-1]),.out(stage_mux_output[i])); 
 					end 
 			end 
 			
 		for(i = 0; i < WIDTH; i = i +1) 
-			begin 
+			begin: FINAL_DIVIDER_STAGE
 				assign quo[WIDTH-i-1] = ~(stage_sum[i][WIDTH-1]); 
 			end 
 		assign rem = stage_sum[WIDTH-1]; 

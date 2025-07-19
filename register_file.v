@@ -1,14 +1,14 @@
 module register_file(clk,read_1_addr,read_2_addr, write_addr, read_bus_1, read_bus_2, write_bus, write_enabled,reset);
-	parameter ADDR_WIDTH= 5;
+	parameter ADDR_WIDTH= 3;
    parameter REG_N = 2**ADDR_WIDTH; 
-	parameter REG_WIDTH = 8; 
+	parameter REG_WIDTH = 16; 
 	output [REG_WIDTH-1:0] read_bus_1, read_bus_2;
 	input [REG_WIDTH-1:0] write_bus; 
 	input [ADDR_WIDTH-1:0] read_1_addr, read_2_addr, write_addr;
 			
 	input reset,clk, write_enabled ; 
 	wire [REG_N-1:0] write_reg_select; 
-	wire [REG_WIDTH-1:0] register_output [0:REG_N-1]; 
+	wire [(REG_N*REG_WIDTH)-1:0] register_output; 
 
 	register_address_decoder#(.INPUT_WIDTH(ADDR_WIDTH)) WRITE_REG_DECODE(.in(write_addr),.out(write_reg_select)); 
 	
@@ -16,7 +16,7 @@ module register_file(clk,read_1_addr,read_2_addr, write_addr, read_bus_1, read_b
 	generate
 	for (i=0; i < REG_N; i = i +1)
 		begin:register_file 
-			register REG(.clk(clk),.in(write_bus),.out(register_output[i]), .write_selected(write_reg_select[i]), write_enabled(write_enabled), .reset(reset)); 
+			register REG(.clk(clk),.in(write_bus),.out(register_output[(((i+1)*REG_WIDTH)-1):(i*REG_WIDTH)]), .write_selected(write_reg_select[i]), .write_enabled(write_enabled), .reset(reset)); 
 		end 
 	endgenerate 
 	
@@ -28,7 +28,8 @@ endmodule
 module register(clk,in, out, write_selected, write_enabled, reset); 
 	parameter WIDTH = 8; 
 	input reset, write_selected, write_enabled; 
-	input [WIDTH-1:0] in;  
+	input [WIDTH-1:0] in; 
+	input clk; 
 	output wire [WIDTH-1:0] out; 
 	
 	//generate flip flops 
@@ -41,44 +42,40 @@ module register(clk,in, out, write_selected, write_enabled, reset);
 	endgenerate 
 endmodule 
 
-
+//8 16bit reg output selector  
 module reg_mux(select, in, out); 
-	parameter REG_N = 16; 
-	parameter WIDTH = 8; 
-	parameter SELECT_WIDTH = clogb2(REG_N); 
-	input [WIDTH-1:0] in [0:REG_N-1];
+	parameter REG_N = 8; 
+	parameter WIDTH = 16; 
+	localparam SELECT_WIDTH = 3; 
+	input [(REG_N*WIDTH)-1:0] in;
 	output reg [WIDTH-1:0] out; 
-	input [SELECT_WIDTH-1:0] select; 
-	
-	function integer clogb2;
-		input [31:0] value;
-		integer 	i;
-		begin
-			clogb2 = 0;
-			for(i = 0; 2**i < value; i = i + 1)
-				clogb2 = i + 1;
-		end
-	endfunction
+	input [3:0] select; 
 	
 	always@(*) 
 		begin
-			out = 0; 
-			out = in[select]; 
+			case(select)
+				3'b000:out = in[15:0]; 
+				3'b001:out = in[31:16]; 
+				3'b010:out = in[47:32]; 
+				3'b011:out = in[63:48]; 
+				3'b100:out = in[79:64]; 
+				3'b101:out = in[95:80]; 
+				3'b110:out = in[111:96]; 
+				3'b111:out = in[127:112]; 
+			endcase
 		end
 endmodule 
 	
 
-
-module register_address_decoder(in,out, enable);  
+//extensible register decoder
+module register_address_decoder(in,out);  
 	parameter INPUT_WIDTH = 3;
 	parameter OUTPUT_WIDTH = 2**INPUT_WIDTH; 
-	input [INPUT_WIDTH-1:0] in; 
+	input [INPUT_WIDTH-1:0] in;  
 	output reg [OUTPUT_WIDTH-1:0] out; 
 	
 	always@(*)
 		begin
-			out = 0; 
-			//one hot output 
 			out[in] = 1; 
 		end 
 endmodule 
@@ -86,15 +83,3 @@ endmodule
 
 
 	
-module d_ff(clk, d, q, reset);
-	input clk; 
-	input d, reset; 
-	output reg q; 
-	always @(posedge clk, posedge reset)
-		begin
-			if(reset)
-				q <= 0; 
-			else
-				q <= d; 
-		end 
-endmodule 

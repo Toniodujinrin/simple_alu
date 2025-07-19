@@ -8,8 +8,11 @@ module simplified_signed_adder(x, y, add_sub, cout, s);
 	output [WIDTH-1:0] s; 
 	output cout; 
 
-	
+	wire [WIDTH-1:0] couts;  
 	wire [WIDTH-1:0] _y; 
+	
+	assign cout = couts[WIDTH-1]; 
+	
 	genvar i; 
 	generate
 		for(i = 0; i < WIDTH; i = i+1)
@@ -18,16 +21,18 @@ module simplified_signed_adder(x, y, add_sub, cout, s);
 			end
 	endgenerate
 
-	carry_look_adder #(.WIDTH(WIDTH)) A1(x, _y, add_sub, s, cout);
+	carry_look_adder #(.WIDTH(WIDTH)) A1(x, _y, add_sub, s, couts);
 endmodule 
 
 //carry look ahead adder implementation
-module carry_look_adder #(parameter WIDTH = 8) (
-	input [WIDTH-1:0] x, y,
-	input cin,
-	output [WIDTH-1:0] s,
-	output cout
-);
+module carry_look_adder  (x,y,cin,s,cout);
+
+	parameter WIDTH = 16; 
+	input [WIDTH-1:0] x, y; 
+	input cin; 
+	output [WIDTH-1:0] s, cout; 
+	
+	
 	wire [WIDTH:0] c;
 	wire [WIDTH-1:0] g, p;
 	
@@ -43,7 +48,7 @@ module carry_look_adder #(parameter WIDTH = 8) (
 	endgenerate
 
 	assign s = x ^ y ^ c[WIDTH-1:0];
-	assign cout = c[WIDTH];
+	assign cout = c[WIDTH:1];
 endmodule
 
 //D type flip flop 
@@ -64,12 +69,15 @@ endmodule
 module chained_mux(x,y,s,out); 
 	parameter WIDTH = 7; 
 	input [WIDTH-1:0] x,y; 
+	input s; 
 	output [WIDTH-1:0] out; 
 	
 	genvar i; 
 	generate 
-		for(i=0; i< WIDTH; i = i+1) 
+		for(i=0; i< WIDTH; i = i+1)
+		begin : SINGLE_MUX
 			mux MUX(.x(x[i]),.y(y[i]),.s(s),.out(out[i])); 
+		end 
 	endgenerate 
 endmodule 
 
@@ -134,7 +142,7 @@ module leading_zero_counter (
 endmodule
 
 //extensible signed magnitude comparator
-module simple_signed_comparator(x,y,gt,lt,eq)
+module simple_signed_comparator(x,y,gt,lt,eq); 
 	parameter WIDTH = 16; 
 	input [WIDTH-1:0] x,y; 
 	output gt, lt, eq; 
@@ -177,8 +185,8 @@ module simple_comparator(x,y,gt,lt,eq);
 
    genvar k;
    generate
-	  for (k = 0; k < WIDTH; k = k + 1) begin: x_gt_y_block
-		begin
+	  for (k = 0; k < WIDTH; k = k + 1) 
+		begin:x_gt_y_block
 			assign xgty_bit[k] = x[k] & ~y[k] & eqn_prefix[k];
 		end
    endgenerate

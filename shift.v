@@ -11,6 +11,7 @@ module shift(x,y,shift_count,mode, negative, zero, cout, overflow );
 	endfunction	
 	parameter SHIFT_WIDTH = clogb2(WIDTH); 
 	input [WIDTH-1:0] x; 
+	output negative, zero, cout, overflow; 
 	output [WIDTH-1:0] y; 
 	input [SHIFT_WIDTH-1:0] shift_count; 
 	input [2:0] mode; 
@@ -33,8 +34,8 @@ module shift(x,y,shift_count,mode, negative, zero, cout, overflow );
 		begin:BARREL_SHIFT 
 			if(i == 0)
 					chained_mux#(.WIDTH(WIDTH)) N_MUX(
-									 .x(x),
-									 .y(
+									 .y(x),
+									 .x(
 									 mode==3'b100 ? {x[(1 << i)-1:0],x[WIDTH-1:(1 << i)]}: //ROR 
 									 mode==3'b001 ? {zero_input[(1 << i)-1:0],x[WIDTH-1:(1 << i)]}:       //LSR
 									 mode==3'b010 ? {sign_bit_input[(1 << i)-1:0],x[WIDTH-1:(1 << i)]}:   //ASR
@@ -45,8 +46,8 @@ module shift(x,y,shift_count,mode, negative, zero, cout, overflow );
 									 .out(stage_shift[i])); 
 			else 
 					chained_mux#(.WIDTH(WIDTH)) N_MUX(
-									 .x(stage_shift[i-1]),
-									 .y(
+									 .y(stage_shift[i-1]),
+									 .x(
 									 mode==3'b100 ? {stage_shift[i-1][(1 << i)-1:0],stage_shift[i-1][WIDTH-1:(1 << i)]}: //ROR 
 									 mode==3'b001 ? {zero_input[(1 << i)-1:0],stage_shift[i-1][WIDTH-1:(1 << i)]}:       //LSR
 									 mode==3'b010 ? {sign_bit_input[(1 << i)-1:0],stage_shift[i-1][WIDTH-1:(1 << i)]}:   //ASR
@@ -60,8 +61,8 @@ module shift(x,y,shift_count,mode, negative, zero, cout, overflow );
 	assign negative = y[WIDTH-1]; 
 	assign zero = ~|y; 
 	assign cout = 0; 
-	assign overflow: (mode == 3'b000) || (mode == 3'b011) && 
-	(x[WIDTH-1] ^ Y[WIDTH-1]); 
+	assign overflow = (mode == 3'b000) || (mode == 3'b011) && 
+	(x[WIDTH-1] ^ y[WIDTH-1]); 
 endmodule 
 
 

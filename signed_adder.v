@@ -9,12 +9,30 @@ module signed_adder(x, y, add_sub, overflow,negative,zero,cout,s);
 	output negative; 
 	output zero; 
 	
-	simplified_signed_adder#(.WIDTH(WIDTH)) S1(.x(x),.y(y),.add_sub(add_sub),.cout(cout),.s(s)); 
+	wire [WIDTH-1:0] couts; 
+	wire [WIDTH-1:0] _y; 
+	
+	assign cout = couts[WIDTH-1]; 
+	
+	genvar i; 
+	generate
+		for(i = 0; i < WIDTH; i = i+1)
+			begin: compliment_y
+				assign _y[i] = y[i] ^ add_sub;
+			end
+	endgenerate
+
+	carry_look_adder #(.WIDTH(WIDTH)) A1(x, _y, add_sub, s, couts);
+	
 
 	//set flags 
-	assign overflow = (~(x[WIDTH-1] ^ _y[WIDTH-1])) & (s[WIDTH-1] ^ x[WIDTH-1]);
+	assign overflow = couts[WIDTH-1] ^ couts[WIDTH-2];
 	assign negative = s[WIDTH-1];
 	assign zero = ~(|s); 
 
 endmodule
 
+
+	
+
+	
