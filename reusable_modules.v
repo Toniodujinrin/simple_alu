@@ -108,3 +108,84 @@ module shift_register_n(clk,enable,q,preset,reset,load,shift_load,in);
 	endgenerate
 	
 endmodule 
+
+
+//11bit leading zero counter
+module leading_zero_counter (
+    input [10:0] x,
+    output reg [3:0] q,
+    output a
+);
+    assign a = ~|x;
+    always @(*) begin
+        if (x[10]) q = 4'd0;
+        else if (x[9]) q = 4'd1;
+        else if (x[8]) q = 4'd2;
+        else if (x[7]) q = 4'd3;
+        else if (x[6]) q = 4'd4;
+        else if (x[5]) q = 4'd5;
+        else if (x[4]) q = 4'd6;
+        else if (x[3]) q = 4'd7;
+        else if (x[2]) q = 4'd8;
+        else if (x[1]) q = 4'd9;
+        else if (x[0]) q = 4'd10;
+        else q = 4'd11;
+    end
+endmodule
+
+//extensible signed magnitude comparator
+module simple_signed_comparator(x,y,gt,lt,eq)
+	parameter WIDTH = 16; 
+	input [WIDTH-1:0] x,y; 
+	output gt, lt, eq; 
+	//internal wires
+	wire x_msb = x[WIDTH-1] ; 
+	wire y_msb = y[WIDTH-1]; 
+	wire x_pos_y_neg, x_neg_y_pos, equal_sign; //sign comparison bits
+	wire mag_gt, mag_lt, mag_eq; //magnitude comparison bits
+	//compare signs
+	simple_comparator#(.WIDTH(1)) MSB_COMPARATOR(.x(x_msb), .y(y_msb), .gt(x_pos_y_neg), .lt(x_neg_y_pos), .eq(equal_sign)); 
+	simple_comparator#(.WIDTH(WIDTH-1)) MAG_COMPARATOR(.x(x[WIDTH-2:0]),.y(y[WIDTH-2:0]), .gt(mag_gt), .lt(mag_lt), .eq(mag_eq)); 
+	assign gt = x_pos_y_neg | (equal_sign & mag_gt); 
+	assign lt = x_neg_y_pos | (equal_sign & mag_lt); 
+	assign eq = equal_sign & mag_eq; 
+endmodule 
+
+
+//extensible unsigned magnitude comparator 
+module simple_comparator(x,y,gt,lt,eq); 
+	parameter WIDTH = 4; 
+	input[WIDTH-1:0] x,y; 
+	output gt,lt, eq; 
+   wire [WIDTH-1:0] i;
+   wire [WIDTH-1:0] xgty_bit;
+   wire [WIDTH-1:0] eqn_prefix;
+	
+
+   assign i = x ~^ y;
+
+   genvar j;
+   generate
+	  for (j = 0; j < WIDTH; j = j + 1) begin: eq_prefix_block
+			if (j == WIDTH - 1) begin
+				 assign eqn_prefix[j] = 1'b1;
+			end else begin
+				 assign eqn_prefix[j] = eqn_prefix[j + 1] & i[j + 1];
+			end
+	  end
+   endgenerate
+
+   genvar k;
+   generate
+	  for (k = 0; k < WIDTH; k = k + 1) begin: x_gt_y_block
+		begin
+			assign xgty_bit[k] = x[k] & ~y[k] & eqn_prefix[k];
+		end
+   endgenerate
+
+   assign eq = &i;
+   assign gt = |xgty_bit;
+   assign lt = ~(gt | eq);
+endmodule 
+
+

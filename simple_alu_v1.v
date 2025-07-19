@@ -13,7 +13,7 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//temporary outputs
    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
-	wire [15:0] temp_div_r, temp_mod_r, temp_mul_h_r, temp_mul_l_r, temp_sub_add_r, temp_lsl_r, temp_lsr_r, temp_asr_r, temp_asl_r, temp_or_nor_r, temp_and_nand_r, temp_xor_xnor_r, temp_not_r; 
+	wire [15:0] temp_div_r, temp_mod_r, temp_mul_h_r, temp_mul_l_r, temp_sub_add_r, temp_shift_r, temp_or_nor_r, temp_and_nand_r, temp_xor_xnor_r, temp_not_r; 
 	wire [31:0] temp_mul_full_r; 
 	assign temp_mul_l_r = temp_mul_full_r[15:0]; 
 	assign temp_mul_h_r = temp_mul_full_r[31:16]; 
@@ -28,11 +28,12 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//internal control signals based on opcode 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	wire add_sub; signed_unsigned, negate, ; 
+	wire add_sub; signed_unsigned_multiplier, negate, ; 
 	wire [2:0] shifter_mode;
    assign negate = ((opcode == 5'b01000) || (opcode == 5'b01001) || (opcode == 5'b01011))?1:0; 
 	assign add_sub = opcode == 5'b00010 ?1:0  //Add or subtract control bits 
-	assign signed_unsigned = opcode == 5'b00011||opcode == 5'b01111 ? 1:0; 
+	assign signed_unsigned_multiplier = (opcode == 5'b00011)||(opcode == 5'b01111) ? 1:0; 
+	assign signed_unsigned_comparator = opcode == 5'b11110 ? 1:0; 
 	//shifter modes///////
 	//LSL = 3'b000
 	//LSR = 3'b001 
@@ -47,10 +48,10 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	signed_adder#(.WIDTH(WIDTH)) ADDER_MODULE(.x(x), .y(y), .add_sub(add_sub), .overflow(temp_overflow[0]), .negative(temp_negative[0]), .zero(temp_zero[0]),.cout(temp_cout[0]),.s(temp_sub_add_r);
-	comparator#(.WIDTH(WIDTH)) COMPARATOR_MODULE(.x(x),.y(y),.negative(temp_negative[1]),.zero(temp_zero[1]),.cout(temp_cout[1]),.overflow(temp_overflow[1]));
+	comparator#(.WIDTH(WIDTH)) COMPARATOR_MODULE(.x(x),.y(y),.signed_unsigned(signed_unsigned_comparator),.negative(temp_negative[1]),.zero(temp_zero[1]),.cout(temp_cout[1]),.overflow(temp_overflow[1]));
 	divider#(.WIDTH(WIDTH)) DIVIDER_MODULE(.x(x),.y(y),.quo(temp_div_r),.rem(temp_mod_r),.invalid_flag(temp_division_invalid_flag), .negative(temp_negative[2]), .zero(temp_zero[2]), .cout(temp_cout[2]), .overflow(temp_overflow[2])); 
-	multiplier#(.WIDTH(WIDTH)) MULTIPLIER_MODULE(.x(x),.y(y),.r(temp_mul_full_r),.signed_unsigned(signed_unsigned), .negative(temp_negative[3]),.zero(temp_zero[3]), .overflow(temp_overflow[3]), .cout(temp_cout[3]));  
-	n_barrel_rotator_shifter#(.WIDTH(WIDTH)) SHIFTER_MODULE(.x(x),.y(r),.shift_count(y),.mode(mode),.negative(temp_negative[4]), .zero(temp_zero[4]), .cout(temp_cout[4]), .overflow(temp_overflow[4])) ; 
+	multiplier#(.WIDTH(WIDTH)) MULTIPLIER_MODULE(.x(x),.y(y),.r(temp_mul_full_r),.signed_unsigned(signed_unsigned_multiplier), .negative(temp_negative[3]),.zero(temp_zero[3]), .overflow(temp_overflow[3]), .cout(temp_cout[3]));  
+	n_barrel_rotator_shifter#(.WIDTH(WIDTH)) SHIFTER_MODULE(.x(x),.y(temp_shift_r),.shift_count(y),.mode(mode),.negative(temp_negative[4]), .zero(temp_zero[4]), .cout(temp_cout[4]), .overflow(temp_overflow[4])) ; 
 	and_mod#(.WIDTH(WIDTH))  AND_MODULE(.x(x),.y(y),.r(temp_and_nand_r),.negate(negate), .negative(temp_negative[5]),.zero(temp_zero[5]), .cout(temp_cout[5]), .overflow(temp_overflow[5])); 
 	not_mod#(.WIDTH(WIDTH))  NOT_MODULE(.x(x),.r(temp_not_r), .negative(temp_negative[6]),.zero(temp_zero[6]), .cout(temp_cout[6]), .overflow(temp_overflow[6])); 
 	or_mod#(.WIDTH(WIDTH)) OR_MODULE(.x(x), .y(y), .r(temp_or_nor_r), .negate(negate), .negative(temp_negative[7]),.zero(temp_zero[7]), .cout(temp_cout[7]), .overflow(temp_overflow[7])); 
@@ -86,7 +87,7 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 				zero = temp_zero[3]; 
 				overlow = temp_overflow[3]; 
 				cout = temp_cout[3];
-		00100: r = 0; 
+		00100: r = 0; //no output for comparison operation, just CPSR update
 				negative = temp_negative[1]; 
 				zero = temp_zero[1]; 
 				overlow = temp_overflow[1]; 
@@ -141,6 +142,43 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 				zero = temp_zero[2]; 
 				overlow = temp_overflow[2]; 
 				cout = temp_cout[2];
+		10000: r = temp_mul_r; 
+				negative = temp_negative[2]; 
+				zero = temp_zero[2]; 
+				overlow = temp_overflow[2]; 
+				cout = temp_cout[2];
+		//floating point arithmetic opcodes 
+		11000: r = temp_shift_r; 
+				negative = temp_negative[4]; 
+				zero = temp_zero[4]; 
+				overlow = temp_overflow[4]; 
+				cout = temp_cout[4];
+		11001: r = temp_shift_r; 
+				negative = temp_negative[4]; 
+				zero = temp_zero[4]; 
+				overlow = temp_overflow[4]; 
+				cout = temp_cout[4];
+		11010: r = temp_shift_r; 
+				negative = temp_negative[4]; 
+				zero = temp_zero[4]; 
+				overlow = temp_overflow[4]; 
+				cout = temp_cout[4];
+		11011: r = temp_shift_r; 
+				negative = temp_negative[4]; 
+				zero = temp_zero[4]; 
+				overlow = temp_overflow[4]; 
+				cout = temp_cout[4];
+		11100: r = temp_shift_r; 
+				negative = temp_negative[4]; 
+				zero = temp_zero[4]; 
+				overlow = temp_overflow[4]; 
+				cout = temp_cout[4];
+		//sqr root 
+		11110: r = 0; //no output for comparison operation, just CPSR update
+				negative = temp_negative[1]; 
+				zero = temp_zero[1]; 
+				overlow = temp_overflow[1]; 
+				cout = temp_cout[1];
 		
 		
 		

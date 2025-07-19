@@ -1,38 +1,21 @@
-module comparator(x,y,negative, zero, cout, overflow);
-
+module comparator(x,y,signed_unsigned, negative, zero, cout, overflow);
 	parameter WIDTH = 4; 
 	input[WIDTH-1:0] x,y; 
-	output gt,lt, eq; 
-   wire [WIDTH-1:0] i;
-   wire [WIDTH-1:0] xgty_bit;
-   wire [WIDTH-1:0] eqn_prefix;
+	output wire negative, zero, cout, overflow; 
 	
-	//temporary inequality flags 
-	wire eq, gt, lt; 
-
-   assign i = x ~^ y;
-
-   genvar j;
-   generate
-	  for (j = 0; j < WIDTH; j = j + 1) begin: eq_prefix_block
-			if (j == WIDTH - 1) begin
-				 assign eqn_prefix[j] = 1'b1;
-			end else begin
-				 assign eqn_prefix[j] = eqn_prefix[j + 1] & i[j + 1];
-			end
-	  end
-   endgenerate
-
-   genvar k;
-   generate
-	  for (k = 0; k < WIDTH; k = k + 1) begin: x_gt_y_block
-			assign xgty_bit[k] = x[k] & ~y[k] & eqn_prefix[k];
-   endgenerate
-
-   assign eq = &i;
-   assign gt = |xgty_bit;
-   assign lt = ~(gt | eq);
+	//temporary comparison flags
+	wire gt, lt, eq; 
+	wire unsigned_gt, usigned_lt, unsigned_eq; 
+	wire signed_gt, signed_lt, signed_eq; 
 	
+	//instantiate base model
+	simple_comparator#(.WIDTH(WIDTH)) UNSIGNED_COMPARATOR(.x(x), .y(y), .gt(unsigned_gt), .lt(unsigned_lt), .eq(unsigned_eq)); 
+	simmple_signed_comparator#(.WIDTH(WIDTH)) SIGNED_COMPARATOR(.x(x), .y(y), .gt(signed_gt), .lt(signed_lt), .eq(signed_eq)); 
+	
+	//multiplexing signed and unsigned comparison flags               //signed (signed_unsigned == 1) , unsigned (signed_unsigned == 0)
+	assign gt = signed_unsigned ? signed_gt: unsigned_gt; 
+	assign lt = signed_unsigned ? signed_lt: unsigned_lt; 
+	assign eq = signed_unsgined ? signed_eq: unsigned_eq;                  
 	
 	//assign CPSR bits corresponding to the inequality flags 
 	assign negative = lt; 
@@ -42,3 +25,6 @@ module comparator(x,y,negative, zero, cout, overflow);
 	assign overflow = 1'b0; 
 	
 endmodule
+
+
+	
