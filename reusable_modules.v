@@ -118,26 +118,28 @@ module shift_register_n(clk,enable,q,preset,reset,load,shift_load,in);
 endmodule 
 
 
-//11bit leading zero counter
-module leading_zero_counter (
-    input [10:0] x,
-    output reg [3:0] q,
-    output a
-);
+//13bit leading zero counter
+module leading_zero_counter (x,q,a);
+   input [12:0] x; 
+    output reg [3:0] q; 
+    output a; 
+	 
     assign a = ~|x;
     always @(*) begin
-        if (x[10]) q = 4'd0;
-        else if (x[9]) q = 4'd1;
-        else if (x[8]) q = 4'd2;
-        else if (x[7]) q = 4'd3;
-        else if (x[6]) q = 4'd4;
-        else if (x[5]) q = 4'd5;
-        else if (x[4]) q = 4'd6;
-        else if (x[3]) q = 4'd7;
-        else if (x[2]) q = 4'd8;
-        else if (x[1]) q = 4'd9;
-        else if (x[0]) q = 4'd10;
-        else q = 4'd11;
+        if (x[12]) q = 4'd0;
+        else if (x[11]) q = 4'd1;
+        else if (x[10]) q = 4'd2;
+        else if (x[9]) q = 4'd3;
+        else if (x[8]) q = 4'd4;
+        else if (x[7]) q = 4'd5;
+        else if (x[6]) q = 4'd6;
+        else if (x[5]) q = 4'd7;
+        else if (x[4]) q = 4'd8;
+        else if (x[3]) q = 4'd9;
+        else if (x[2]) q = 4'd10;
+        else if (x[1]) q = 4'd11;
+        else if (x[0]) q = 4'd12;
+        else q = 4'd13;
     end
 endmodule
 
@@ -196,4 +198,26 @@ module simple_comparator(x,y,gt,lt,eq);
    assign lt = ~(gt | eq);
 endmodule 
 
+//n bit 2's complimenter 
+module complimenter_2(x, r, enable); 
+	parameter WIDTH = 16;
+	input [WIDTH-1:0] x; 
+	output [WIDTH-1:0] r; 
+	wire [WIDTH-1:0] neg_x; 
+	wire [WIDTH-1:0] x_2_compliment; 
+	wire [WIDTH-1] temp_cout; 
+	assign neg_x = ~x; 
+	carry_look_adder#(.WIDTH(WIDTH)) ADDER(.x(neg_x),.y({WIDTH{1'b0}}),.cin(1),.s(x_2_compliment),.cout(temp_cout)); //ideally temp cout should be zero, hence not passed as output 
+	assign r = enable?x_2_compliment:x; 
+endmodule 
+	
+//extenbsible n bit cross bar switch
+module crossbar_switch (x1,x2,y1,y2,s);
+   parameter WIDTH = 16; 
+	input [WIDTH-1:0] x1,x2; 
+	output [WIDTH-1:0] y1,y2; 
+	input s; 
+	mux MUX1(.x(x1),.y(x2),.s(s),.out(y2)); 
+   mux MUX2(.x(x2),.y(x1),.s(s),.out(y1)); 
+endmodule	
 
