@@ -13,7 +13,7 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//temporary outputs
    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
-	wire [15:0] temp_div_r, temp_mod_r, temp_mul_h_r, temp_mul_l_r, temp_sub_add_r, temp_shift_r, temp_or_nor_r, temp_and_nand_r, temp_xor_xnor_r, temp_not_r; 
+	wire [15:0] temp_div_r, temp_mod_r, temp_mul_h_r, temp_mul_l_r, temp_sub_add_r, temp_shift_r, temp_or_nor_r, temp_and_nand_r, temp_xor_xnor_r, temp_not_r, temp_fp_add_sub_r; 
 	wire [31:0] temp_mul_full_r; 
 	assign temp_mul_l_r = temp_mul_full_r[15:0]; 
 	assign temp_mul_h_r = temp_mul_full_r[31:16]; 
@@ -28,12 +28,13 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//internal control signals based on opcode 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	wire add_sub, signed_unsigned_multiplier, negate, signed_unsigned_comparator ; 
+	wire add_sub, signed_unsigned_multiplier, negate, signed_unsigned_comparator, fp_add_sub; 
 	wire [2:0] shifter_mode;
    assign negate = ((opcode == 5'b01000) || (opcode == 5'b01001) || (opcode == 5'b01011))?1:0; 
 	assign add_sub = opcode == 5'b00010 ?1:0;  //Add or subtract control bits 
 	assign signed_unsigned_multiplier = (opcode == 5'b00011)||(opcode == 5'b01111) ? 1:0; 
 	assign signed_unsigned_comparator = opcode == 5'b11110 ? 1:0; 
+	assign fp_add_sub = opcode == 5'b10010 ? 1:0; 
 	//shifter modes///////
 	//LSL = 3'b000
 	//LSR = 3'b001 
@@ -56,6 +57,7 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 	not_mod#(.WIDTH(WIDTH))  NOT_MODULE(.x(x),.r(temp_not_r), .negative(temp_negative[6]),.zero(temp_zero[6]), .cout(temp_cout[6]), .overflow(temp_overflow[6])); 
 	or_mod#(.WIDTH(WIDTH)) OR_MODULE(.x(x), .y(y), .r(temp_or_nor_r), .negate(negate), .negative(temp_negative[7]),.zero(temp_zero[7]), .cout(temp_cout[7]), .overflow(temp_overflow[7])); 
 	xor_mod#(.WIDTH(WIDTH)) XOR_MODULE(.x(x), .y(y), .r(temp_xor_xnor_r), .negate(negate), .negative(temp_negative[8]),.zero(temp_zero[8]), .cout(temp_cout[8]), .overflow(temp_overflow[8])); 
+	fp_adder_subtractor     FP_ADDER_MODULE(.x(x), .y(y), .r(temp_fp_add_sub_r), .add_sub(fp_add_sub), .negative(temp_negative[9]), .cout(temp_cout[9]), .overflow(temp_overflow[9]), .zero(temp_zero[9]));
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//hard decode opcode 
@@ -181,6 +183,20 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 				zero = temp_zero[2]; 
 				overflow = temp_overflow[2]; 
 				cout = temp_cout[2];
+				end
+		10001: begin 
+				r = temp_fp_add_sub_r; 
+				negative = temp_negative[9]; 
+				zero = temp_zero[9]; 
+				overflow = temp_overflow[9]; 
+				cout = temp_cout[9];
+				end
+		10010: begin 
+				r = temp_fp_add_sub_r; 
+				negative = temp_negative[9]; 
+				zero = temp_zero[9]; 
+				overflow = temp_overflow[9]; 
+				cout = temp_cout[9];
 				end
 		//floating point arithmetic opcodes 
 		11000: begin

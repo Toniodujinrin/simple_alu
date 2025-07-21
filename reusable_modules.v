@@ -202,10 +202,11 @@ endmodule
 module complimenter_2(x, r, enable); 
 	parameter WIDTH = 16;
 	input [WIDTH-1:0] x; 
+	input enable; 
 	output [WIDTH-1:0] r; 
 	wire [WIDTH-1:0] neg_x; 
 	wire [WIDTH-1:0] x_2_compliment; 
-	wire [WIDTH-1] temp_cout; 
+	wire [WIDTH-1:0] temp_cout; 
 	assign neg_x = ~x; 
 	carry_look_adder#(.WIDTH(WIDTH)) ADDER(.x(neg_x),.y({WIDTH{1'b0}}),.cin(1),.s(x_2_compliment),.cout(temp_cout)); //ideally temp cout should be zero, hence not passed as output 
 	assign r = enable?x_2_compliment:x; 
