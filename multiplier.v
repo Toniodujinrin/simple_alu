@@ -88,7 +88,7 @@ endmodule
 
 
 
-//Exstensible unsigned multiplier array multiplier implementation
+//Exstensible unsigned multiplier (array multiplier implementation)
 module unsigned_multiplier(x,y,r);
 	parameter  WIDTH = 4; 
 	input  [WIDTH-1:0] x,y; 
