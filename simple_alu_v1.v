@@ -58,7 +58,8 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 	or_mod#(.WIDTH(WIDTH)) OR_MODULE(.x(x), .y(y), .r(temp_or_nor_r), .negate(negate), .negative(temp_negative[7]),.zero(temp_zero[7]), .cout(temp_cout[7]), .overflow(temp_overflow[7])); 
 	xor_mod#(.WIDTH(WIDTH)) XOR_MODULE(.x(x), .y(y), .r(temp_xor_xnor_r), .negate(negate), .negative(temp_negative[8]),.zero(temp_zero[8]), .cout(temp_cout[8]), .overflow(temp_overflow[8])); 
 	fp_adder_subtractor     FP_ADDER_MODULE(.x(x), .y(y), .r(temp_fp_add_sub_r), .add_sub(fp_add_sub), .negative(temp_negative[9]), .cout(temp_cout[9]), .overflow(temp_overflow[9]), .zero(temp_zero[9]));
-	
+	fp_comparator           FP_COMPARATOR_MODULE(.x(x),.y(y), .negative(temp_negative[10]), .zero(temp_zero[10]), .overflow(temp_overflow[10]), .cout(temp_cout[10]));  
+	fp_multiplier           FP_MULTIPLIER_MODULE(.x(x),.y(y),.r(temp_fp_mul_r),.negative(temp_negative[11]), .zero(temp_zero[11]), .overflow(temp_overflow[11]), .cout(temp_cout[11])); 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//hard decode opcode 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,7 +199,28 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, division_inval
 				overflow = temp_overflow[9]; 
 				cout = temp_cout[9];
 				end
-		//floating point arithmetic opcodes 
+		10011: begin 
+				r = temp_fp_mul_r; 
+				negative = temp_negative[11]; 
+				zero = temp_zero[11]; 
+				overflow = temp_overflow[11]; 
+				cout = temp_cout[11];
+				end
+		//floating point arithmetic opcodes
+		10101: begin 
+				r = 0; 
+				negative = temp_negative[10]; 
+				zero = temp_zero[10]; 
+				overflow = temp_overflow[10]; 
+				cout = temp_cout[10];
+				end
+		10110: begin 
+				r = x; 
+				negative = x[WIDTH-1]; 
+				zero = x == 0 ? 1: 0; 
+				overflow = 0; 
+				cout = 0; 
+				end
 		11000: begin
 				r = temp_shift_r; 
 				negative = temp_negative[4]; 

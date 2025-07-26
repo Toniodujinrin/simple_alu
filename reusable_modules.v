@@ -119,7 +119,7 @@ endmodule
 
 
 //13bit leading zero counter
-module leading_zero_counter (x,q,a);
+module leading_zero_counter_13 (x,q,a);
    input [12:0] x; 
     output reg [3:0] q; 
     output a; 
@@ -140,6 +140,39 @@ module leading_zero_counter (x,q,a);
         else if (x[1]) q = 4'd11;
         else if (x[0]) q = 4'd12;
         else q = 4'd13;
+    end
+endmodule
+
+module leading_zero_counter_22 (
+    input [21:0] x,
+    output reg [4:0] q,
+    output a
+);
+    assign a = ~|x;
+    always @(*) begin
+        if (x[21]) q = 5'd0;
+        else if (x[20]) q = 5'd1;
+        else if (x[19]) q = 5'd2;
+        else if (x[18]) q = 5'd3;
+        else if (x[17]) q = 5'd4;
+        else if (x[16]) q = 5'd5;
+        else if (x[15]) q = 5'd6;
+        else if (x[14]) q = 5'd7;
+        else if (x[13]) q = 5'd8;
+        else if (x[12]) q = 5'd9;
+        else if (x[11]) q = 5'd10;
+        else if (x[10]) q = 5'd11;
+        else if (x[9]) q = 5'd12;
+        else if (x[8]) q = 5'd13;
+        else if (x[7]) q = 5'd14;
+        else if (x[6]) q = 5'd15;
+        else if (x[5]) q = 5'd16;
+        else if (x[4]) q = 5'd17;
+        else if (x[3]) q = 5'd18;
+        else if (x[2]) q = 5'd19;
+        else if (x[1]) q = 5'd20;
+        else if (x[0]) q = 5'd21;
+        else q = 5'd22;
     end
 endmodule
 

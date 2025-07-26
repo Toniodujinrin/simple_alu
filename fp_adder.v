@@ -57,12 +57,12 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero);
 	complimenter_2#(.WIDTH(12)) LESSER_COMPLIMENTER(.x({1'b0,lesser_mantisa}),.r(lesser_signed_mantisa), .enable(lesser_sign)); 
 	complimenter_2#(.WIDTH(12)) GREATER_COMPLIMENTER(.x({1'b0,greater_mantisa}),.r(greater_signed_mantisa), .enable(greater_sign)); 
 	simplified_signed_adder#(.WIDTH(12)) FINAL_ADDER(.x(greater_signed_mantisa), .y(lesser_signed_mantisa), .add_sub(1'b0), .cout(final_adder_carry), .s(final_adder_sum));
-	leading_zero_counter LEADING_ZERO_COUNTER(.x(final_sum),.q(normalizer_shift),.a(final_sum_0));
+	leading_zero_counter_13 LEADING_ZERO_COUNTER(.x(final_sum),.q(normalizer_shift),.a(final_sum_0));
 	barrel_shifter_11_13#(.WIDTH(13)) NORMALIZER(.x(final_sum),.r(normalized_mantisa), .shift_count(a?{5'b00000}:{1'b0,normalizer_shift}), .mode(1'b1)); 
 	simplified_signed_adder#(.WIDTH(6)) EXPONENT_NORMALIZER(.x({1'b0,greater_exponent}), .y(a?6'b000000:{2'b0,normalizer_shift}), .add_sub(1'b1), .cout(temp_cout[1]), .s(normalized_exponent)); 
-	round_to_nearest_even ROUNDER(.in(normalized_mantisa), .out(rounded_mantisa), .carry_out(rounder_carry_out)); 
+	round_to_nearest_even_13 ROUNDER(.in(normalized_mantisa), .out(rounded_mantisa), .carry_out(rounder_carry_out)); 
 	simplified_signed_adder#(.WIDTH(5)) EXPONENT_ROUNDER(.x(result_exponent), .y({4'b0000,rounder_carry_out}), .add_sub(1'b0), .cout(exponent_rounder_carry_out), .s(rounded_exponent));
-	special_case_handler SPECIAL_CASE_MODULE(.x(x),.y(y),.is_special(special_operands_NaN_Inf), .special_result(special_result), .add_sub(add_sub)); 
+	special_case_handler_adder SPECIAL_CASE_MODULE(.x(x),.y(y),.is_special(special_operands_NaN_Inf), .special_result(special_result), .add_sub(add_sub)); 
 	
 	//result derivation 
 	assign final_sum = {final_adder_carry, final_adder_sum};
@@ -73,27 +73,26 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero);
 	
 	//cpsr status bits 
 	assign negative = r[15]; 
-	assign zero = r[14:0] == 15'b0; 
+	assign zero = ~|r[14:0]; 
 	assign cout = 0; 
-	assign overflow = normalized_exponent == 5'b11111; 
+	assign overflow = exponent_rounder_carry_out | normalized_exponent == 5'b11111; 
 	
 	
 endmodule 
 
 
 //half precision rounding module
-module round_to_nearest_even (in, out, carry_out);
+module round_to_nearest_even_13 (in, out, carry_out);
 	 input wire [12:0] in; // normalized mantissa: [12] = implicit bit, [11:2] = mantissa, [2:0] = guard, round, sticky
     output wire [9:0] out;  // rounded 10-bit mantissa
     output wire carry_out; // set if rounding causes mantissa overflow
-    wire guard = in[2];
-    wire round = in[1];
-    wire sticky = in[0];
+    wire guard = in[1];
+    wire round = in[0];   // no sticky bit; 
     wire [9:0] mantissa = in[11:2]; // 10-bit mantissa
     wire [9:0] rounded;
 
     // Instantiate adder to compute mantissa + 1
-    simplified_signed_adder adder (
+    simplified_signed_adder#(.WIDTH(10)) adder (
         .x(mantissa),
         .y(10'b0000000001),
         .add_sub(1'b0), // Add operation
@@ -101,8 +100,8 @@ module round_to_nearest_even (in, out, carry_out);
         .s(rounded)
     );
 
-    // Round-to-nearest-even: round up if guard=1 and (round=1 or sticky=1 or LSB=1)
-    assign out = (guard & (round | sticky | mantissa[0])) ? rounded : mantissa;
+    // Round-to-nearest-even: 
+    assign out = guard ? ( round ? rounded :(mantissa[0]?rounded:mantissa)) : mantissa;
 endmodule
 
 
@@ -116,7 +115,17 @@ module barrel_shifter_11_13(x,r, shift_count, mode);
 	wire [WIDTH-1:0] stage_shift [3:0];  
 	//mode == 1 - left shift
 	//mode == 0 - right shift
-	chained_mux#(.WIDTH(WIDTH)) STAGE_0_CM(.x({(WIDTH){1'b0}}),.y(x),.s(shift_count[4]),.out(stage_shift[0]));
+	generate 
+		if(WIDTH < 17)
+			begin 
+				chained_mux#(.WIDTH(WIDTH)) STAGE_0_CM(.x({(WIDTH){1'b0}}),.y(x),.s(shift_count[4]),.out(stage_shift[0]));
+			end 
+		else
+			begin 
+				chained_mux#(.WIDTH(WIDTH)) STAGE_0_CM(.x(mode?{x[WIDTH-17:0],16'b0}:{16'b0,x[WIDTH-1:16]}),.y(x),.s(shift_count[4]),.out(stage_shift[0]));
+			end 
+	endgenerate 
+		
 	chained_mux#(.WIDTH(WIDTH)) STAGE_1_CM(.x(mode?{x[WIDTH-9:0],8'b0}:{8'b0,x[WIDTH-1:8]}),.y(stage_shift[0]),.s(shift_count[3]),.out(stage_shift[1]));
 	chained_mux#(.WIDTH(WIDTH)) STAGE_2_CM(.x(mode?{x[WIDTH-5:0], 4'b0}:{4'b0,x[WIDTH-1:4]}), .y(stage_shift[1]), .s(shift_count[2]), .out(stage_shift[2])); 
 	chained_mux#(.WIDTH(WIDTH)) STAGE_3_CM(.x(mode?{x[WIDTH-3:0], 2'b0}:{2'b0,x[WIDTH-1:2]}), .y(stage_shift[2]), .s(shift_count[1]), .out(stage_shift[3])); 
@@ -124,7 +133,7 @@ module barrel_shifter_11_13(x,r, shift_count, mode);
 
 endmodule
 
-module special_case_handler (x,y,is_special, special_result, add_sub);
+module special_case_handler_adder (x,y,is_special, special_result, add_sub);
     input [15:0] x, y;
     output reg is_special;
     output reg [15:0] special_result;
