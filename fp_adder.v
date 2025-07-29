@@ -1,9 +1,9 @@
 //half precision(16 bit) floating point adder
-module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero);
+module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero, inf , nan, subnormal);
 	//port declarations
 	input [15:0] x,y; 
 	output [15:0] r; 
-	output negative, cout, overflow, zero; 
+	output negative, cout, overflow, zero, nan, subnormal, inf; 
 	input add_sub; 
 
 	//internal wire declarations
@@ -62,7 +62,7 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero);
 	simplified_signed_adder#(.WIDTH(6)) EXPONENT_NORMALIZER(.x({1'b0,greater_exponent}), .y(a?6'b000000:{2'b0,normalizer_shift}), .add_sub(1'b1), .cout(temp_cout[1]), .s(normalized_exponent)); 
 	round_to_nearest_even_13 ROUNDER(.in(normalized_mantisa), .out(rounded_mantisa), .carry_out(rounder_carry_out)); 
 	simplified_signed_adder#(.WIDTH(5)) EXPONENT_ROUNDER(.x(result_exponent), .y({4'b0000,rounder_carry_out}), .add_sub(1'b0), .cout(exponent_rounder_carry_out), .s(rounded_exponent));
-	special_case_handler_adder SPECIAL_CASE_MODULE(.x(x),.y(y),.is_special(special_operands_NaN_Inf), .special_result(special_result), .add_sub(add_sub)); 
+	special_case_handler_adder SPECIAL_CASE_MODULE(.x(x),.y(y),.is_special(special_operands_NaN_Inf), .special_result(special_result), .add_sub(add_sub),  .inf(inf), .nan(nan)); 
 	
 	//result derivation 
 	assign final_sum = {final_adder_carry, final_adder_sum};
@@ -75,7 +75,8 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero);
 	assign negative = r[15]; 
 	assign zero = ~|r[14:0]; 
 	assign cout = 0; 
-	assign overflow = exponent_rounder_carry_out | normalized_exponent == 5'b11111; 
+	assign overflow = exponent_rounder_carry_out | normalized_exponent == 5'b11111;
+	assign subnormal = (~|r[14:10]) & (|r[9:0]); 
 	
 	
 endmodule 
@@ -133,9 +134,9 @@ module barrel_shifter_11_13(x,r, shift_count, mode);
 
 endmodule
 
-module special_case_handler_adder (x,y,is_special, special_result, add_sub);
+module special_case_handler_adder (x,y,is_special, special_result, add_sub, inf, nan);
     input [15:0] x, y;
-    output reg is_special;
+    output reg is_special, inf, nan;
     output reg [15:0] special_result;
 	 input add_sub; 
     wire x_inf = (x[14:10] == 5'b11111) && (x[9:0] == 0);
@@ -144,21 +145,31 @@ module special_case_handler_adder (x,y,is_special, special_result, add_sub);
     wire y_nan = (y[14:10] == 5'b11111) && (y[9:0] != 0);
 
     always @(*) begin
-        is_special = 0;
-        special_result = 0;
+        is_special = 1'b0;
+        special_result = 16'b0;
+		  inf = 1'b0; 
+		  nan = 1'b0 
 
         if (x_nan || y_nan) begin
-            is_special = 1;
+            is_special = 1'b1;
+				nan = 1'b1; 
+				inf = 1'b0; 
             special_result = 16'h7FFF; // NaN (sign=0, exponent=all 1s, mantissa=nonzero)
         end else if (x_inf && y_inf) begin
-            is_special = 1;
+            is_special = 1'b1;
             special_result = (x[15] == y[15]) ? x : 16'h7FFF; // Inf + Inf = Inf, Inf - Inf = NaN
+				inf = (x[15] == y[15]) ? 1'b1 : 1'b0; 
+				nan = ~inf; 
         end else if (x_inf) begin
-            is_special = 1;
+            is_special = 1'b1;
             special_result = x;
+				inf = 1'b1; 
+				nan = 1'b0; 
         end else if (y_inf) begin
-            is_special = 1;
+            is_special = 1'b1;
             special_result = add_sub ? {~y[15], 5'b11111, 10'b0} : y;
+				inf = 1'b1; 
+				nan = 1'b0; 
         end
     end
 endmodule
