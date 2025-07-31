@@ -1,16 +1,15 @@
-module fp_multiplier(x,y,r,negative, zero, overflow, cout); 
+module fp_multiplier(x,y,r,negative, zero, overflow, cout, inf, nan, subnormal); 
 	input [15:0] x, y; 
 	output [15:0] r; 
-	output negative, zero, overflow, cout; 
+	output negative, zero, overflow, cout, inf, nan, subnormal; 
 	
-	//seperate into sections 
+	//wire declaration 
 	wire x_sign = x[15]; 
 	wire y_sign = y[15]; 
 	wire [9:0] x_mantissa = x[9:0]; 
 	wire [9:0] y_mantissa = y[9:0]; 
 	wire [4:0] x_exp = x[14:10]; 
 	wire [4:0] y_exp = y[14:10]; 
-	
 	wire [21:0] mantissa_product; 
 	wire x_implicit_bit; 
 	wire y_implicit_bit; 
@@ -24,12 +23,13 @@ module fp_multiplier(x,y,r,negative, zero, overflow, cout);
 	wire [15:0] special_result; 
 	wire special_case; 
 	
+	//assign implicit leading bits 
 	assign x_implicit_bit = |x_exp; 
 	assign y_implicit_bit = |y_exp; 
 	
 	
 	
-	
+	//initiate submodules 
 	unsigned_multiplier#(.WIDTH(11)) MANTISSA_MULTIPLIER(.x({x_implicit_bit,x_mantissa}),.y({y_implicit_bit,y_mantissa}),.r(mantissa_product));
 	leading_zero_counter_22 LEADING_ZERO_COUNTER(.x(mantissa_product), .q(normalization_shift), .a(product_0));
 	barrel_shifter_11_13#(.WIDTH(22))    LEFT_SHIFTER(.x(mantissa_product),.r(normalized_product), .shift_count(product_0?normalization_shift:5'b00000), .mode(1'b1));
@@ -37,15 +37,20 @@ module fp_multiplier(x,y,r,negative, zero, overflow, cout);
 	carry_look_adder#(.WIDTH(5))  EXPONENT_ADDER(.x(x_exp),.y(y_exp),.cin(rounder_cout),.s(exponent_sum),.cout(exponent_adder_cout));
 	special_case_handler_multiplier SPECIAL_CASE_MODULE(.x(x),.y(y),.is_special(special_case), .special_result(special_result));
 	
+	
+	//assign final outputs 
 	assign r = special_case? special_result : {x_sign^y_sign,exponent_sum, rounded_mantissa}; 
 	assign negative = r[15]; 
 	assign cout = 0; 
 	assign zero = ~|r[14:0]; 
 	assign overflow = special_case|exponent_adder_cout[4]; 
-	
+	assign subnormal = (~|r[14:10]) & (|r[9:0]); 
+	assign inf = (&r[14:0]) & (~|r[9:0]); 
+	assign nan = (&r[14:0]) & (|r[9:0]); 
 	
 endmodule 
 
+//rounding logic
 module round_to_nearest_even_22 (in, out, carry_out);
 	 input wire [21:0] in; // normalized mantissa (22 bits)
     output wire [9:0] out;  // rounded 10-bit mantissa
@@ -69,6 +74,8 @@ module round_to_nearest_even_22 (in, out, carry_out);
     assign out = guard ? (( round| sticky) ? rounded :(mantissa[0]?rounded:mantissa)) : mantissa;
 endmodule
 
+
+//logic to handle special cases: infinity, nan, zero 
 module special_case_handler_multiplier (x,y,is_special, special_result);
    input [15:0] x, y;
    output reg is_special;
@@ -95,17 +102,17 @@ module special_case_handler_multiplier (x,y,is_special, special_result);
 				is_special = 1;
 				special_result = {x[15]^y[15], 5'b11111, 10'b0}; // -Inf * +Inf = -Inf, -Inf * -Inf = Inf, Inf * Inf = Inf
 			end
-		else if (x_inf) 
+		else if (x_inf & ~y_zero) 
 			begin
 				is_special = 1;
 				special_result = {x[15]^y[15],x[14:0]};
 			end
-		else if (y_inf) 
+		else if (y_inf & ~x_zero) 
 			begin
 				is_special = 1;
 				special_result = {y[15]^x[15],y[14:0]};
 			end
-		if ((x_zero && y_inf) || (y_zero && x_inf)) 
+		else if ((x_zero & y_inf) | (y_zero & x_inf)) 
 			begin
 				is_special = 1;
 				special_result = 16'h7FFF; // NaN

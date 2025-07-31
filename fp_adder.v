@@ -17,7 +17,7 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero, inf
 	wire [10:0] greater_mantisa, lesser_mantisa; 
 	wire [4:0] shift_value; 
 	wire [10:0] aligned_mantisa; 
-	wire [11:0] greater_signed_mantisa; 
+	wire [11:0] greater_signed_mantisa; module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, option_bits, inf, subnormal, nan); 
 	wire [11:0] lesser_signed_mantisa;
 	wire [11:0] final_adder_sum; 
 	wire final_adder_carry; 
@@ -33,7 +33,7 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero, inf
 	wire result_sign;
 	wire rounder_carry_out, exponent_rounder_carry_out; 
 	wire [15:0] special_result; 
-	wire special_operands_NaN_Inf; 
+	wire special_operands; 
 	
 	//pre-assignments 
 	assign x_sign = x[15]; 
@@ -62,14 +62,14 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero, inf
 	simplified_signed_adder#(.WIDTH(6)) EXPONENT_NORMALIZER(.x({1'b0,greater_exponent}), .y(a?6'b000000:{2'b0,normalizer_shift}), .add_sub(1'b1), .cout(temp_cout[1]), .s(normalized_exponent)); 
 	round_to_nearest_even_13 ROUNDER(.in(normalized_mantisa), .out(rounded_mantisa), .carry_out(rounder_carry_out)); 
 	simplified_signed_adder#(.WIDTH(5)) EXPONENT_ROUNDER(.x(result_exponent), .y({4'b0000,rounder_carry_out}), .add_sub(1'b0), .cout(exponent_rounder_carry_out), .s(rounded_exponent));
-	special_case_handler_adder SPECIAL_CASE_MODULE(.x(x),.y(y),.is_special(special_operands_NaN_Inf), .special_result(special_result), .add_sub(add_sub),  .inf(inf), .nan(nan)); 
+	special_case_handler_adder SPECIAL_CASE_MODULE(.x(x),.y(y),.is_special(special_operands), .special_result(special_result), .add_sub(add_sub)); 
 	
 	//result derivation 
 	assign final_sum = {final_adder_carry, final_adder_sum};
 	assign normalized_exponent_underflow = normalized_exponent[5]; 
 	assign result_exponent = normalized_exponent_underflow?5'b00000:normalized_exponent[4:0]; 
 	assign result_sign = temp_gt?x_sign:temp_eq?final_adder_sum[11]:y_sign; 
-	assign r = special_operands_NaN_Inf? special_result:{result_sign, rounded_exponent, rounded_mantisa}; 
+	assign r = special_operands? special_result:{result_sign, rounded_exponent, rounded_mantisa}; 
 	
 	//cpsr status bits 
 	assign negative = r[15]; 
@@ -77,6 +77,8 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero, inf
 	assign cout = 0; 
 	assign overflow = exponent_rounder_carry_out | normalized_exponent == 5'b11111;
 	assign subnormal = (~|r[14:10]) & (|r[9:0]); 
+	assign inf = (&r[14:0]) & (~|r[9:0]); 
+	assign nan = (&r[14:0]) & (|r[9:0]); 
 	
 	
 endmodule 
@@ -106,37 +108,11 @@ module round_to_nearest_even_13 (in, out, carry_out);
 endmodule
 
 
-//11 or 13 bit right or left barrel shifter 5bit shift count 
-module barrel_shifter_11_13(x,r, shift_count, mode);
-   parameter WIDTH = 11; 
-	input [WIDTH-1:0] x; 
-	output [WIDTH-1:0] r; 
-	input mode; 
-	input [4:0] shift_count; 
-	wire [WIDTH-1:0] stage_shift [3:0];  
-	//mode == 1 - left shift
-	//mode == 0 - right shift
-	generate 
-		if(WIDTH < 17)
-			begin 
-				chained_mux#(.WIDTH(WIDTH)) STAGE_0_CM(.x({(WIDTH){1'b0}}),.y(x),.s(shift_count[4]),.out(stage_shift[0]));
-			end 
-		else
-			begin 
-				chained_mux#(.WIDTH(WIDTH)) STAGE_0_CM(.x(mode?{x[WIDTH-17:0],16'b0}:{16'b0,x[WIDTH-1:16]}),.y(x),.s(shift_count[4]),.out(stage_shift[0]));
-			end 
-	endgenerate 
-		
-	chained_mux#(.WIDTH(WIDTH)) STAGE_1_CM(.x(mode?{x[WIDTH-9:0],8'b0}:{8'b0,x[WIDTH-1:8]}),.y(stage_shift[0]),.s(shift_count[3]),.out(stage_shift[1]));
-	chained_mux#(.WIDTH(WIDTH)) STAGE_2_CM(.x(mode?{x[WIDTH-5:0], 4'b0}:{4'b0,x[WIDTH-1:4]}), .y(stage_shift[1]), .s(shift_count[2]), .out(stage_shift[2])); 
-	chained_mux#(.WIDTH(WIDTH)) STAGE_3_CM(.x(mode?{x[WIDTH-3:0], 2'b0}:{2'b0,x[WIDTH-1:2]}), .y(stage_shift[2]), .s(shift_count[1]), .out(stage_shift[3])); 
-	chained_mux#(.WIDTH(WIDTH)) STAGE_4_CM(.x(mode?{x[WIDTH-2:0], 1'b0}:{1'b0,x[WIDTH-1:1]}), .y(stage_shift[3]), .s(shift_count[0]), .out(r));
 
-endmodule
 
-module special_case_handler_adder (x,y,is_special, special_result, add_sub, inf, nan);
+module special_case_handler_adder (x,y,is_special, special_result, add_sub);
     input [15:0] x, y;
-    output reg is_special, inf, nan;
+    output reg is_special;
     output reg [15:0] special_result;
 	 input add_sub; 
     wire x_inf = (x[14:10] == 5'b11111) && (x[9:0] == 0);
@@ -147,29 +123,19 @@ module special_case_handler_adder (x,y,is_special, special_result, add_sub, inf,
     always @(*) begin
         is_special = 1'b0;
         special_result = 16'b0;
-		  inf = 1'b0; 
-		  nan = 1'b0 
 
         if (x_nan || y_nan) begin
             is_special = 1'b1;
-				nan = 1'b1; 
-				inf = 1'b0; 
             special_result = 16'h7FFF; // NaN (sign=0, exponent=all 1s, mantissa=nonzero)
         end else if (x_inf && y_inf) begin
             is_special = 1'b1;
             special_result = (x[15] == y[15]) ? x : 16'h7FFF; // Inf + Inf = Inf, Inf - Inf = NaN
-				inf = (x[15] == y[15]) ? 1'b1 : 1'b0; 
-				nan = ~inf; 
         end else if (x_inf) begin
             is_special = 1'b1;
             special_result = x;
-				inf = 1'b1; 
-				nan = 1'b0; 
         end else if (y_inf) begin
             is_special = 1'b1;
             special_result = add_sub ? {~y[15], 5'b11111, 10'b0} : y;
-				inf = 1'b1; 
-				nan = 1'b0; 
         end
     end
 endmodule
