@@ -120,17 +120,15 @@ set_location_assignment PIN_AF18 -to operand_1_ssd_tens[5]
 set_location_assignment PIN_AH18 -to operand_1_ssd_tens[6]
 set_location_assignment PIN_AB25 -to w[0]
 set_location_assignment PIN_AC24 -to w[1]
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name VERILOG_FILE logic_modules.v
 set_global_assignment -name VERILOG_FILE reusable_modules.v
 set_global_assignment -name SOURCE_FILE simple_alu_v1
 set_global_assignment -name VERILOG_FILE simple_alu_v1.v
-set_global_assignment -name VERILOG_FILE register_file.v
 set_global_assignment -name VERILOG_FILE multiplier.v
 set_global_assignment -name VERILOG_FILE signed_adder.v
-set_global_assignment -name VERILOG_FILE logic.v
 set_global_assignment -name VERILOG_FILE shift.v
-set_global_assignment -name VERILOG_FILE Divider.v
-set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
-set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name VERILOG_FILE fp_adder.v
 set_global_assignment -name VERILOG_FILE fp_comparator.v
 set_global_assignment -name VERILOG_FILE fp_multiplier.v

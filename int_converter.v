@@ -2,7 +2,7 @@ module int_converter(x, r, negative, cout, overflow, zero);
 
 input [15:0] x; 
 output [15:0] r; 
-output negative, cout, overflow; zero; 
+output negative, cout, overflow, zero; 
 
 wire unsigned_x; 
 wire x_sign = x[15]; 
@@ -22,7 +22,7 @@ complimenter_2 #(.WIDTH(16))          COMPLIMENTER(.x(x), .r(unsigned_x), .enabl
 leading_zero_counter_16               LEADING_ZERO_COUNTER(.x(unsigned_x), .q(ldz_count), .a(value_zero)); 
 simplified_signed_adder#(.WIDTH(5))   ADDER(.x(5'd1), .y(ldz_count), .add_sub(1'b0), .cout(adder_cout), .s(mantissa_shift_count));
 simplified_signed_adder#(.WIDTH(5))   SUBTRACTOR(.x(5'd30), .y(ldz_count), .add_sub(1'b1), .cout(sub_cout), .s(exponent));
-barrel_shifter_11_13#(.WIDTH(16))     LEFT_SHIFTER(.x(x), .r(shifted_mantissa)), .shift_count(mantissa_shift_count), .mode(1'b1));
+barrel_shifter_11_13#(.WIDTH(16))     LEFT_SHIFTER(.x(x), .r(shifted_mantissa), .shift_count(mantissa_shift_count), .mode(1'b1));
 assign truncated_mantissa = shifted_mantissa[15:6]; 
 
 assign  r_sign = x_sign; 

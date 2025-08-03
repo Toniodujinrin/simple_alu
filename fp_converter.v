@@ -1,7 +1,7 @@
 module fp_converter(x,r,negative,cout,overflow,zero, inf , nan, subnormal); 
 	input [15:0] x; 
 	output [15:0] r; 
-	output negative, cout, overflow, zero, inf, nan; 
+	output negative, cout, overflow, zero, inf, nan, subnormal; 
 	
 	wire x_sign = x[15]; 
 	wire [4:0] x_exponent = x[14:10]; 
@@ -11,7 +11,7 @@ module fp_converter(x,r,negative,cout,overflow,zero, inf , nan, subnormal);
 	wire exponent_unbias_cout; //not needed 
 	wire shift_diff_1_cout, shift_diff_2_cout; 
 	wire implicit_leading_bit = 1'b1; 
-	wire unbiased_exp_gt_10;, unbiased_exp_lt_10, unbiased_exp_eq_10; 
+	wire unbiased_exp_gt_10, unbiased_exp_lt_10, unbiased_exp_eq_10; 
 	wire [4:0] shift_diff_1, shift_diff_2, mantissa_shift; 
 	wire [15:0] unsigned_normal_int, signed_normal_int; 
 	wire special_case, special_case_overflow ; 
@@ -31,7 +31,7 @@ module fp_converter(x,r,negative,cout,overflow,zero, inf , nan, subnormal);
 	assign r = special_case? special_case_result: signed_normal_int; 
 	assign negative = r[15]; 
 	assign cout = 1'b0; 
-	assign overflow = special_case_overflow | unsigned_normal_int[15]  //overflow if unsigned integer MSB is 1. 
+	assign overflow = special_case_overflow | unsigned_normal_int[15];   //overflow if unsigned integer MSB is 1. 
 	assign zero= ~|r; 
 	
 
@@ -42,7 +42,7 @@ endmodule
 
 
 
-module special_case_converter(x,spcial_case, special_case_result, special_case_overflow, inf, nan, subnormal); 
+module special_case_converter(x,special_case, special_case_result, special_case_overflow, inf, nan, subnormal); 
 	input [15:0] x; 
 	output reg special_case, special_case_overflow, inf, nan, subnormal; 
 	output reg [15:0] special_case_result; 
@@ -51,7 +51,7 @@ module special_case_converter(x,spcial_case, special_case_result, special_case_o
 	wire [4:0] x_exponent = x[14:10]; 
 	wire [9:0] x_mantissa = x[9:0]; 
 	//TODO fix for cases like 1.xxx, check for exp = 01111
-	always(*)
+	always @(*)
 		begin 
 			if((~|x_exponent)& (~|x_mantissa))  //zero 
 				begin 
@@ -75,7 +75,7 @@ module special_case_converter(x,spcial_case, special_case_result, special_case_o
 			else if((&x_exponent) & (~|x_mantissa) )  //+ or = infinity
 				begin 
 					special_case = 1'b1; 
-					spcial_case_overflow = 1'b1; 
+					special_case_overflow = 1'b1; 
 					special_case_result = x_sign ? 16'h8000 : 16'h7FFF;
 					inf = 1'b1; 
 					nan = 1'b0; 
@@ -99,7 +99,7 @@ module special_case_converter(x,spcial_case, special_case_result, special_case_o
 					nan = 1'b0; 
 					subnormal = 1'b0; 
 				end 
-			else if ((~x_exponent[4] & (|x_exponent [3:0])) //decimal = 0.XXX; truncates to 0 as integer ; occurs when exponent = 0XXXX (except 01111)
+			else if ((~x_exponent[4]) & (|x_exponent[3:0])) //decimal = 0.XXX; truncates to 0 as integer ; occurs when exponent = 0XXXX (except 01111)
 				begin 
 					special_case = 1'b1; 
 					special_case_result = 16'd0; 

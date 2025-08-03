@@ -14,7 +14,7 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, option_bits, i
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//temporary outputs
    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
-	wire [15:0]  temp_mul_h_r, temp_mul_l_r, temp_sub_add_r, temp_shift_r, temp_or_nor_r, temp_and_nand_r, temp_xor_xnor_r, temp_not_r, temp_fp_add_sub_r,temp_fp_mul_r, temp_fp_conv_r; 
+	wire [15:0]  temp_mul_h_r, temp_mul_l_r, temp_sub_add_r, temp_shift_r, temp_or_nor_r, temp_and_nand_r, temp_xor_xnor_r, temp_not_r, temp_fp_add_sub_r,temp_fp_mul_r, temp_fp_conv_r, temp_int_conv_r; 
 	wire [31:0] temp_mul_full_r;                   //full 32 bit multiply result 
 	assign temp_mul_l_r = temp_mul_full_r[15:0];   //integer multiply low bits 
 	assign temp_mul_h_r = temp_mul_full_r[31:16];  //integer multiply high bits
@@ -22,7 +22,8 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, option_bits, i
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//temp cpsr bits
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	wire [31:0]	temp_negative, temp_zero, temp_overflow, temp_cout, temp_inf, temp_subnormal, temp_nan;
+	wire [13:0]	temp_negative, temp_zero, temp_overflow, temp_cout;  
+	wire [3:0] temp_inf, temp_subnormal, temp_nan;
 
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -60,6 +61,7 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, option_bits, i
 	fp_comparator           FP_COMPARATOR_MODULE(.x(x),.y(y), .negative(temp_negative[10]), .zero(temp_zero[10]), .overflow(temp_overflow[10]), .cout(temp_cout[10]), .nan(temp_nan[1]), .inf(temp_inf[1]), .subnormal(temp_subnormal[1]));  
 	fp_multiplier           FP_MULTIPLIER_MODULE(.x(x),.y(y),.r(temp_fp_mul_r),.negative(temp_negative[11]), .zero(temp_zero[11]), .overflow(temp_overflow[11]), .cout(temp_cout[11]), .inf(temp_inf[2]), .nan(temp_nan[2]), .subnormal(temp_subnormal[2])); 
 	fp_converter            FP_CONVERTER_MODULE(.x(x), .r(temp_fp_conv_r), .negative(temp_negative[12]), .zero(temp_zero[12]), .overflow(temp_overflow[12]), .inf(temp_inf[3]), .nan(temp_nan[3]), .subnormal(temp_subnormal[3])); 
+	int_converter           INT_CONVERTER_MODULE(.x(x), .r(temp_int_conv_r),  .negative(temp_negative[13]), .zero(temp_zero[13]), .overflow(temp_overflow[13]), .cout(temp_cout[13])); 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//hard decode opcode 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -188,7 +190,7 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, option_bits, i
 				overflow = temp_overflow[9]; 
 				cout = temp_cout[9];
 				inf = temp_inf[0]; 
-				nan = temp_nan[0]
+				nan = temp_nan[0];
 				subnormal = temp_subnormal[0]; 
 				end
 		10010: begin                           //FSUB 
@@ -212,45 +214,45 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, option_bits, i
 				subnormal = temp_subnormal[2]; 
 				end
 		10110: begin                        //ITOF / FTOI 
-				r = temp_fp_conv_r; 
-				negative = temp_negative[12]; 
-				zero = temp_zero[12]; 
-				overflow = temp_overflow[12]; 
-				cout = temp_cout[12]; 
-				inf = temp_inf[3]; 
-				nan = temp_nan[3]; 
-				subnormal = temp_subnormal[3]; 
+				r = (option_bits == 3'b000 )? temp_fp_conv_r :temp_int_conv_r; 
+				negative = (option_bits == 3'b000 )?temp_negative[12]: temp_negative[13]; 
+				zero = (option_bits == 3'b000 )?temp_zero[12]: temp_zero[13]; 
+				overflow = (option_bits == 3'b000 )? temp_overflow[12]: temp_overflow[13] ; 
+				cout = (option_bits == 3'b000 )? temp_cout[12]: temp_cout[13]; 
+				inf = (option_bits == 3'b000 )? temp_inf[3]:1'b0; 
+				nan = (option_bits == 3'b000 )?temp_nan[3]:1'b0; 
+				subnormal = (option_bits == 3'b000 )?temp_subnormal[3]: 1'b0; 
 				end
 		
-		11000: begin
+		11000: begin                      //LSR            
 				r = temp_shift_r; 
 				negative = temp_negative[4]; 
 				zero = temp_zero[4]; 
 				overflow = temp_overflow[4]; 
 				cout = temp_cout[4];
 				end 
-		11001: begin
+		11001: begin                     //LSL
 				r = temp_shift_r; 
 				negative = temp_negative[4]; 
 				zero = temp_zero[4]; 
 				overflow = temp_overflow[4]; 
 				cout = temp_cout[4];
 				end 
-		11010: begin
+		11010: begin                    //ASR
 				r = temp_shift_r; 
 				negative = temp_negative[4]; 
 				zero = temp_zero[4]; 
 				overflow = temp_overflow[4]; 
 				cout = temp_cout[4];
 				end
-		11011: begin
+		11011: begin                    //ASL
 				r = temp_shift_r; 
 				negative = temp_negative[4]; 
 				zero = temp_zero[4]; 
 				overflow = temp_overflow[4]; 
 				cout = temp_cout[4];
 				end
-		11100: begin
+		11100: begin                   //ROR
 				r = temp_shift_r; 
 				negative = temp_negative[4]; 
 				zero = temp_zero[4]; 
@@ -261,28 +263,5 @@ module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, option_bits, i
 		end 
 		
 endmodule 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

@@ -17,7 +17,7 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero, inf
 	wire [10:0] greater_mantisa, lesser_mantisa; 
 	wire [4:0] shift_value; 
 	wire [10:0] aligned_mantisa; 
-	wire [11:0] greater_signed_mantisa; module simple_alu_v1(opcode,x,y,r,overflow, negative, zero, cout, option_bits, inf, subnormal, nan); 
+	wire [11:0] greater_signed_mantisa; 
 	wire [11:0] lesser_signed_mantisa;
 	wire [11:0] final_adder_sum; 
 	wire final_adder_carry; 
@@ -115,27 +115,36 @@ module special_case_handler_adder (x,y,is_special, special_result, add_sub);
     output reg is_special;
     output reg [15:0] special_result;
 	 input add_sub; 
-    wire x_inf = (x[14:10] == 5'b11111) && (x[9:0] == 0);
-    wire y_inf = (y[14:10] == 5'b11111) && (y[9:0] == 0);
-    wire x_nan = (x[14:10] == 5'b11111) && (x[9:0] != 0);
-    wire y_nan = (y[14:10] == 5'b11111) && (y[9:0] != 0);
+    wire x_inf =  (&x[14:10]) & (~|x[9:0]);
+    wire y_inf =  (&y[14:10]) & (~|y[9:0]);
+    wire x_nan =  (&x[14:10]) & (|x[9:0]);
+    wire y_nan =  (&y[14:10]) & (|y[9:0]);
 
-    always @(*) begin
+    always @(*) 
+	 begin
         is_special = 1'b0;
         special_result = 16'b0;
 
-        if (x_nan || y_nan) begin
+        if (x_nan || y_nan) 
+			begin
             is_special = 1'b1;
             special_result = 16'h7FFF; // NaN (sign=0, exponent=all 1s, mantissa=nonzero)
-        end else if (x_inf && y_inf) begin
+			end 
+		  else if (x_inf && y_inf) 
+			begin
             is_special = 1'b1;
             special_result = (x[15] == y[15]) ? x : 16'h7FFF; // Inf + Inf = Inf, Inf - Inf = NaN
-        end else if (x_inf) begin
+			end 
+		  else if (x_inf) 
+			begin
             is_special = 1'b1;
             special_result = x;
-        end else if (y_inf) begin
+			end 
+			else if (y_inf) 
+			 begin
             is_special = 1'b1;
-            special_result = add_sub ? {~y[15], 5'b11111, 10'b0} : y;
-        end
+            special_result = add_sub ? ({~y[15], 5'b11111, 10'b0}): y;
+			 end
     end
+	 
 endmodule

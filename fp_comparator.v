@@ -1,7 +1,7 @@
 //half precision floating point comparator 
 module fp_comparator(x,y, negative, zero, overflow, cout, inf, subnormal, nan); 
 	input [15:0] x,y; 
-	output wire negative, zero, cout, overflow; 
+	output wire negative, zero, cout, overflow, inf, subnormal, nan; 
 	
 	wire x_sign, y_sign;  
 	wire [4:0] x_exponent, y_exponent; 
