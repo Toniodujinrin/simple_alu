@@ -112,6 +112,7 @@ module special_case_converter(x,special_case, special_case_result, special_case_
 				begin 
 					special_case = 1'b0; 
 					special_case_overflow = 1'b0; 
+					special_case_result = 16'b0; 
 					inf = 1'b0; 
 					nan = 1'b0; 
 					subnormal = 1'b0; 
