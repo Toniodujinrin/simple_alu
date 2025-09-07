@@ -8,6 +8,8 @@ MOV RZ, RX         (MOV reg contents,  integer)                      01		       
 
 MOVF FZ, FX        (MOV reg contents,  floating point)               01		            00000                           FFF         FFF         001
 
+MOVL RX            (MOV from link register to gp reg)                01                 00000                           XXX                     010
+
 ADD RZ, RX, RY     (Add, updates CPSR reg bits)                      01		            00001                           XXX         XXX         YYY
 
 SUB RZ, RX, RY     (Subtract, updates CPSR reg bits)     	         01		            00010	                        XXX         XXX         YYY
@@ -60,9 +62,12 @@ ASL  RZ, RX, RY    (Arithmetic shift left)                           01         
 
 ROR  RZ, RX, RY    (Rotate Bits right)                               01                 11100                           XXX         YYY         YYY
 
+JALR RZ, RX        (Jump and Link with register)                     01                 11101                           XXX         XXX                  
 
 
-Unused Class Specific Opcodes (01110, 01101, 10100, 11111, 11101, 11110, 10101, 10110, 10111)
+
+
+Unused Class Specific Opcodes (01110, 01101, 10100, 11111, 11110, 10101, 10110, 10111)
 
 
 //Class 00, 10 and 11 are immediate value instructions 
@@ -77,8 +82,8 @@ ADDI RZ, RX, IMM   (Add with immediate value)                        00         
 SUBI RZ, RX, IMM   (Subtract with immediate value)                   00                 11                              XXX         YYY        000000
                                       
 
-Class 10 is split into 2 classes: Branch with immediate, Compare with immediate
-//Branch instructions with immediate                                                                                OPT    IMM(offset)    
+Class 10 is split into 2 classes: Branch with immediate, Non-branch with immediate
+//10a Instructions Branch instructions with immediate                                                               OPT  IMM(offset)    
 
 B, IMM          (Unconditional Branch)                               10                 000                         0    0000000000     
 
@@ -88,25 +93,30 @@ BNE, IMM        (Branch Not Equal, CPSR Z = 0)                       10         
 
 BLE, IMM        (Branch Less than or Equal, CPSR N=1|Z=1)            10                 011                         0    0000000000     
 
-BGT, IMM        (Branch Greater than or Equal, CPSR N=0|Z=1)         10                 100                         0    0000000000      
+BGT, IMM        (Branch Greater than or Equal, CPSR N=0|Z=1)         10                 100                         0    0000000000  
+
+JAL,IMM         (Jump and Link, with immediate)                      10                 101                         0    0000000000
+
+RET                                                                  10                 110                         0    0000000000
 
 
-//Compare with immediate                                                                                            OPT    REG            IMM     
+//10b Instrcutions                                                                                                  OPT    REG            IMM     
 CMP RX, IMM        (Compare with immediate value)                    10                 000                         1      XXX            0000000 
 
 UCMP RX, IMM       (Unsigned compare with immediate value)           10                 001                         1      XXX            0000000  
 
+MOVI RX, IMM       (Move with immediate)                             10                 010                         1      XXX            0000000
  
 
 //Shift with immediate                                                                                                REG(out)    REG(in)    IMM    UNUSED
 
-LSL  RZ, RX, IMM   (Logical shift left with immediate val)           11                 000			                 	XXX	        YYY        0000   0
+LSLI RZ, RX, IMM   (Logical shift left with immediate val)           11                 000			                 	XXX	        YYY        0000   0
 
-LSR  RZ, RX, IMM   (Logical shift right with immediate val)          11                 001                             XXX         YYY        0000   0
+LSRI RZ, RX, IMM   (Logical shift right with immediate val)          11                 001                             XXX         YYY        0000   0
 
-ASR  RZ, RX, IMM   (Arithmetic shift right with immediate val)       11                 010                             XXX         YYY        0000   0
+ASRI RZ, RX, IMM   (Arithmetic shift right with immediate val)       11                 010                             XXX         YYY        0000   0
 
-ASL  RZ, RX, IMM   (Arithmetic shift right with immediate val)       11                 011                             XXX         YYY        0000   0
+ASLI RZ, RX, IMM   (Arithmetic shift right with immediate val)       11                 011                             XXX         YYY        0000   0
 
-ROR  RZ, RX, IMM   (Rotate right with immediate val)                 11                 100                             XXX         YYY        0000   0
+RORI RZ, RX, IMM   (Rotate right with immediate val)                 11                 100                             XXX         YYY        0000   0
 
