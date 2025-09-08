@@ -48,9 +48,9 @@ set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
 set_global_assignment -name NOMINAL_CORE_SUPPLY_VOLTAGE 1.2V
-set_global_assignment -name EDA_SIMULATION_TOOL "Questa Intel FPGA (Verilog)"
+set_global_assignment -name EDA_SIMULATION_TOOL "QuestaSim (SystemVerilog)"
 set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
-set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "SYSTEMVERILOG HDL" -section_id eda_simulation
 set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_timing
 set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_symbol
 set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_signal_integrity
@@ -122,19 +122,28 @@ set_location_assignment PIN_AB25 -to w[0]
 set_location_assignment PIN_AC24 -to w[1]
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
-set_global_assignment -name VERILOG_FILE logic_modules.v
+set_global_assignment -name VERILOG_FILE floating_point_modules/fp_multiplier.v
+set_global_assignment -name VERILOG_FILE floating_point_modules/fp_converter.v
+set_global_assignment -name VERILOG_FILE floating_point_modules/fp_comparator.v
+set_global_assignment -name VERILOG_FILE floating_point_modules/fp_adder.v
+set_global_assignment -name VERILOG_FILE integer_modules/signed_adder.v
+set_global_assignment -name VERILOG_FILE integer_modules/shift.v
+set_global_assignment -name VERILOG_FILE integer_modules/multiplier.v
+set_global_assignment -name VERILOG_FILE integer_modules/logic_modules.v
+set_global_assignment -name VERILOG_FILE integer_modules/int_converter.v
+set_global_assignment -name VERILOG_FILE integer_modules/divider.v
+set_global_assignment -name VERILOG_FILE integer_modules/comparator.v
 set_global_assignment -name VERILOG_FILE reusable_modules.v
 set_global_assignment -name SOURCE_FILE simple_alu_v1
 set_global_assignment -name VERILOG_FILE simple_alu_v1.v
-set_global_assignment -name VERILOG_FILE multiplier.v
-set_global_assignment -name VERILOG_FILE signed_adder.v
-set_global_assignment -name VERILOG_FILE shift.v
-set_global_assignment -name VERILOG_FILE fp_adder.v
-set_global_assignment -name VERILOG_FILE fp_comparator.v
-set_global_assignment -name VERILOG_FILE fp_multiplier.v
-set_global_assignment -name VERILOG_FILE fp_converter.v
-set_global_assignment -name VERILOG_FILE int_converter.v
 set_global_assignment -name VERILOG_FILE alu_decoder.v
 set_global_assignment -name VERILOG_FILE alu_constants.v
 set_global_assignment -name VERILOG_FILE alu_core.v
+set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS TEST_BENCH_MODE -section_id eda_simulation
+set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH signed_adder_testbench -section_id eda_simulation
+set_global_assignment -name EDA_TEST_BENCH_NAME signed_adder_testbench -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id signed_adder_testbench
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME signed_adder_testbench -section_id signed_adder_testbench
+set_global_assignment -name EDA_TEST_BENCH_FILE testbench/integer_modules_test/signed_adder_test.sv -section_id signed_adder_testbench
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name EDA_RUN_TOOL_AUTOMATICALLY ON -section_id eda_simulation

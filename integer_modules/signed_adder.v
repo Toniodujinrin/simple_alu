@@ -26,7 +26,7 @@ module signed_adder(x, y, add_sub, overflow,negative,zero,cout,s);
 	
 
 	//set flags 
-	assign overflow = couts[WIDTH-1] ^ couts[WIDTH-2];
+	assign overflow = (x[WIDTH-1] == y[WIDTH-1]) && (s[WIDTH-1] != x[WIDTH-1]);
 	assign negative = s[WIDTH-1];
 	assign zero = ~(|s); 
 
