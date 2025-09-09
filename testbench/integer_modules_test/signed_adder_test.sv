@@ -133,7 +133,7 @@ endclass : monitor
 class scoreboard; 
     mailbox mon_score;
     int samples; 
-  int extended_expected_s; 
+    int extended_expected_s; 
     shortint expected_s;
     bit expected_overflow;
     bit expected_negative;
