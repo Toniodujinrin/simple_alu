@@ -20,6 +20,56 @@ module simplified_signed_adder(x, y, add_sub, cout, s);
 				assign _y[i] = y[i] ^ add_sub;
 			end
 	endgenerate
+	
+module simplified_signed_adder(x, y, add_sub, cout, s);
+	parameter WIDTH = 8; 
+	input [WIDTH-1:0] x, y; 
+	input add_sub;
+	output [WIDTH-1:0] s; 
+	output cout; 
+
+	wire [WIDTH-1:0] couts;  
+	wire [WIDTH-1:0] _y; 
+	
+	assign cout = couts[WIDTH-1]; 
+	
+	genvar i; 
+	generate
+		for(i = 0; i < WIDTH; i = i+1)
+			begin: compliment_y
+				assign _y[i] = y[i] ^ add_sub;
+			end
+	endgenerate
+
+	carry_look_adder #(.WIDTH(WIDTH)) A1(x, _y, add_sub, s, couts);
+endmodule 
+
+//carry look ahead adder implementation
+module carry_look_adder  (x,y,cin,s,cout);
+
+	parameter WIDTH = 16; 
+	input [WIDTH-1:0] x, y; 
+	input cin; 
+	output [WIDTH-1:0] s, cout; 
+	
+	
+	wire [WIDTH:0] c;
+	wire [WIDTH-1:0] g, p;
+	
+	assign g = x & y;
+	assign p = x | y;
+	assign c[0] = cin;
+
+	genvar i;
+	generate
+		for (i = 1; i <= WIDTH; i = i + 1) begin: carry_chain
+			assign c[i] = g[i-1] | (p[i-1] & c[i-1]);
+		end
+	endgenerate
+
+	assign s = x ^ y ^ c[WIDTH-1:0];
+	assign cout = c[WIDTH:1];
+endmodule
 
 	carry_look_adder #(.WIDTH(WIDTH)) A1(x, _y, add_sub, s, couts);
 endmodule 
@@ -216,7 +266,10 @@ module simple_signed_comparator(x,y,gt,lt,eq);
 	wire x_pos_y_neg, x_neg_y_pos, equal_sign; //sign comparison bits
 	wire mag_gt, mag_lt, mag_eq; //magnitude comparison bits
 	//compare signs
-	simple_comparator#(.WIDTH(1)) MSB_COMPARATOR(.x(x_msb), .y(y_msb), .gt(x_pos_y_neg), .lt(x_neg_y_pos), .eq(equal_sign)); 
+    assign x_pos_y_neg = ~x_msb & y_msb; 
+  	assign x_neg_y_pos = x_msb & ~y_msb; 
+    assign equal_sign =  ~(x_msb ^ y_msb); 
+    //compare magnitude
 	simple_comparator#(.WIDTH(WIDTH-1)) MAG_COMPARATOR(.x(x[WIDTH-2:0]),.y(y[WIDTH-2:0]), .gt(mag_gt), .lt(mag_lt), .eq(mag_eq)); 
 	assign gt = x_pos_y_neg | (equal_sign & mag_gt); 
 	assign lt = x_neg_y_pos | (equal_sign & mag_lt); 

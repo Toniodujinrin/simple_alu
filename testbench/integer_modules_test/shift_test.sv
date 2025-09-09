@@ -1,5 +1,3 @@
-// Code your testbench here
-// or browse Examples
 `ifndef SHIFTER_TEST_SV
 `define SHIFTER_TEST_SV
 
@@ -40,13 +38,6 @@ module shifter_testbench;
 
 endmodule: shifter_testbench
 
-//modes////////
-	//LSL = 3'b000
-	//LSR = 3'b001 
-	//ASR = 3'b010 
-	//ASL = 3'b011 
-	//ROR = 3'b100
-	///////////////
 
 interface shifter_if;
     logic [`DATA_WIDTH-1:0] x;
