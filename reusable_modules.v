@@ -1,25 +1,6 @@
 
 
-//simplified adder implementation with no output flags
-module simplified_signed_adder(x, y, add_sub, cout, s);
-	parameter WIDTH = 8; 
-	input [WIDTH-1:0] x, y; 
-	input add_sub;
-	output [WIDTH-1:0] s; 
-	output cout; 
 
-	wire [WIDTH-1:0] couts;  
-	wire [WIDTH-1:0] _y; 
-	
-	assign cout = couts[WIDTH-1]; 
-	
-	genvar i; 
-	generate
-		for(i = 0; i < WIDTH; i = i+1)
-			begin: compliment_y
-				assign _y[i] = y[i] ^ add_sub;
-			end
-	endgenerate
 	
 module simplified_signed_adder(x, y, add_sub, cout, s);
 	parameter WIDTH = 8; 
@@ -44,35 +25,6 @@ module simplified_signed_adder(x, y, add_sub, cout, s);
 	carry_look_adder #(.WIDTH(WIDTH)) A1(x, _y, add_sub, s, couts);
 endmodule 
 
-//carry look ahead adder implementation
-module carry_look_adder  (x,y,cin,s,cout);
-
-	parameter WIDTH = 16; 
-	input [WIDTH-1:0] x, y; 
-	input cin; 
-	output [WIDTH-1:0] s, cout; 
-	
-	
-	wire [WIDTH:0] c;
-	wire [WIDTH-1:0] g, p;
-	
-	assign g = x & y;
-	assign p = x | y;
-	assign c[0] = cin;
-
-	genvar i;
-	generate
-		for (i = 1; i <= WIDTH; i = i + 1) begin: carry_chain
-			assign c[i] = g[i-1] | (p[i-1] & c[i-1]);
-		end
-	endgenerate
-
-	assign s = x ^ y ^ c[WIDTH-1:0];
-	assign cout = c[WIDTH:1];
-endmodule
-
-	carry_look_adder #(.WIDTH(WIDTH)) A1(x, _y, add_sub, s, couts);
-endmodule 
 
 //carry look ahead adder implementation
 module carry_look_adder  (x,y,cin,s,cout);

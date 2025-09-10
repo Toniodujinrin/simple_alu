@@ -145,5 +145,5 @@ set_global_assignment -name EDA_TEST_BENCH_NAME signed_adder_testbench -section_
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id signed_adder_testbench
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME signed_adder_testbench -section_id signed_adder_testbench
 set_global_assignment -name EDA_TEST_BENCH_FILE testbench/integer_modules_test/signed_adder_test.sv -section_id signed_adder_testbench
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name EDA_RUN_TOOL_AUTOMATICALLY ON -section_id eda_simulation
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

@@ -67,7 +67,7 @@ JALR RZ, RX        (Jump and Link with register)                     01         
 
 
 
-Unused Class Specific Opcodes (01110, 01101, 10100, 11111, 11110, 10101, 10110, 10111)
+//Unused Class Specific Opcodes (01110, 01101, 10100, 11111, 11110, 10101, 10110, 10111)
 
 
 //Class 00, 10 and 11 are immediate value instructions 
