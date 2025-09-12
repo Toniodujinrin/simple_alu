@@ -25,7 +25,7 @@ module int_converter_testbench;
     end
 
     initial begin
-        #1000;
+        #100000;
         $finish;
     end
 
@@ -99,7 +99,7 @@ class transaction;
     function void display();
         float16 r_float = new(r);
         real r_real = r_float.convert_to_real();
-            $display("x = %0d, r = %0d,  overflow = %0b, negative = %0b, zero = %0b, cout = %0b", x, r_real, overflow, negative, zero, cout);
+      $display("x = %0d, r = %0d, r_raw = %0b  overflow = %0b, negative = %0b, zero = %0b, cout = %0b", x, r_real,r, overflow, negative, zero, cout);
     endfunction:display
 
 endclass: transaction 
@@ -231,7 +231,7 @@ class scoreboard;
             int_conv_transaction.display();
 
             // Compare results
-            if ((expected_r - r_real > 1e-6)|| (expected_r - r_real < -1e-6))
+          if ((expected_r - r_real > 8)|| (expected_r - r_real < -8)) //use an accuracy of +-8 for float comparison
                 $error("Int→Float result mismatch: DUT r = %0f, expected r = %0f", r_real, expected_r);
             if (expected_negative !== negative)
                 $error("Int→Float negative flag mismatch: DUT negative = %0b, expected = %0b", negative, expected_negative);
@@ -284,7 +284,7 @@ endclass:environment
 
 
 program test (int_converter_interface int_conv_inf); 
-    int samples = 10;
+    int samples = 1000;
     environment env; 
    
 

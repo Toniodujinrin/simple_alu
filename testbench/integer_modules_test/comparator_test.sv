@@ -81,7 +81,6 @@ class generator;
         repeat (samples) begin
             tr = new();
             assert(tr.randomize());
-            //tr.display("Generator");
             gen_drv.put(tr);
         end
     endtask : run
@@ -131,7 +130,6 @@ class monitor;
             tr.zero = comp_if.zero;
             tr.cout = comp_if.cout;
             mon_score.put(tr);
-            //tr.display("Monitor");
         end
     endtask : run
 endclass : monitor

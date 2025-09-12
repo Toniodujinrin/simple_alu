@@ -68,7 +68,6 @@ class generator;
         repeat (samples) begin
             tr = new();
             assert(tr.randomize());
-            //tr.display("Generator");
             gen_drv.put(tr);
         end
     endtask : run
@@ -96,7 +95,6 @@ class driver;
             tr.zero = adder_if.zero;
             tr.cout = adder_if.cout;
             tr.s = adder_if.s;
-            //tr.display("Driver");
         end
 
     endtask : run
@@ -125,7 +123,6 @@ class monitor;
             tr.cout = adder_if.cout;
             tr.s = adder_if.s;
             mon_score.put(tr);
-            //tr.display("Monitor");
         end
     endtask : run
 endclass : monitor
@@ -176,6 +173,7 @@ class scoreboard;
             if (tr.zero !== expected_zero) begin
                 $error("Mismatch in zero: got %0b, expected %0b", tr.zero, expected_zero);
             end
+//signed adder does not use cout
 //             if (tr.cout !== expected_cout) begin
 //                 $error("Mismatch in cout: got %0b, expected %0b", tr.cout, expected_cout);
             //end

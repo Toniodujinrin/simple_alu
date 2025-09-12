@@ -290,30 +290,29 @@ module crossbar_switch (x1,x2,y1,y2,s);
 endmodule	
 
 //right or left barrel shifter 5bit shift count 
-module barrel_shifter_11_13(x,r, shift_count, mode);
-   parameter WIDTH = 11; 
-	input [WIDTH-1:0] x; 
-	output [WIDTH-1:0] r; 
-	input mode; 
-	input [4:0] shift_count; 
-	wire [WIDTH-1:0] stage_shift [3:0];  
-	//mode == 1 - left shift
-	//mode == 0 - right shift
-	generate 
-		if(WIDTH < 17)
-			begin 
-				chained_mux#(.WIDTH(WIDTH)) STAGE_0_CM(.x({(WIDTH){1'b0}}),.y(x),.s(shift_count[4]),.out(stage_shift[0]));
-			end 
-		else
-			begin 
-				chained_mux#(.WIDTH(WIDTH)) STAGE_0_CM(.x(mode?{x[WIDTH-17:0],16'b0}:{16'b0,x[WIDTH-1:16]}),.y(x),.s(shift_count[4]),.out(stage_shift[0]));
-			end 
-	endgenerate 
-		
-	chained_mux#(.WIDTH(WIDTH)) STAGE_1_CM(.x(mode?{x[WIDTH-9:0],8'b0}:{8'b0,x[WIDTH-1:8]}),.y(stage_shift[0]),.s(shift_count[3]),.out(stage_shift[1]));
-	chained_mux#(.WIDTH(WIDTH)) STAGE_2_CM(.x(mode?{x[WIDTH-5:0], 4'b0}:{4'b0,x[WIDTH-1:4]}), .y(stage_shift[1]), .s(shift_count[2]), .out(stage_shift[2])); 
-	chained_mux#(.WIDTH(WIDTH)) STAGE_3_CM(.x(mode?{x[WIDTH-3:0], 2'b0}:{2'b0,x[WIDTH-1:2]}), .y(stage_shift[2]), .s(shift_count[1]), .out(stage_shift[3])); 
-	chained_mux#(.WIDTH(WIDTH)) STAGE_4_CM(.x(mode?{x[WIDTH-2:0], 1'b0}:{1'b0,x[WIDTH-1:1]}), .y(stage_shift[3]), .s(shift_count[0]), .out(r));
-
+module barrel_shifter_11_13(x, r, shift_count, mode);
+    parameter WIDTH = 16; 
+    input [WIDTH-1:0] x; 
+    output [WIDTH-1:0] r; 
+    input mode; 
+    input [4:0] shift_count; 
+    wire [WIDTH-1:0] stage_shift [3:0];  
+    //mode == 1 - left shift
+    //mode == 0 - right shift
+    generate 
+        if(WIDTH < 17)
+            begin 
+                chained_mux#(.WIDTH(WIDTH)) STAGE_0_CM(.x({(WIDTH){1'b0}}),.y(x),.s(shift_count[4]),.out(stage_shift[0]));
+            end 
+        else
+            begin 
+                chained_mux#(.WIDTH(WIDTH)) STAGE_0_CM(.x(mode?{x[WIDTH-17:0],16'b0}:{16'b0,x[WIDTH-1:16]}),.y(x),.s(shift_count[4]),.out(stage_shift[0]));
+            end 
+    endgenerate 
+        
+    chained_mux#(.WIDTH(WIDTH)) STAGE_1_CM(.x(mode?{stage_shift[0][WIDTH-9:0],8'b0}:{8'b0,stage_shift[0][WIDTH-1:8]}),.y(stage_shift[0]),.s(shift_count[3]),.out(stage_shift[1]));
+    chained_mux#(.WIDTH(WIDTH)) STAGE_2_CM(.x(mode?{stage_shift[1][WIDTH-5:0], 4'b0}:{4'b0,stage_shift[1][WIDTH-1:4]}), .y(stage_shift[1]), .s(shift_count[2]), .out(stage_shift[2])); 
+    chained_mux#(.WIDTH(WIDTH)) STAGE_3_CM(.x(mode?{stage_shift[2][WIDTH-3:0], 2'b0}:{2'b0,stage_shift[2][WIDTH-1:2]}), .y(stage_shift[2]), .s(shift_count[1]), .out(stage_shift[3])); 
+    chained_mux#(.WIDTH(WIDTH)) STAGE_4_CM(.x(mode?{stage_shift[3][WIDTH-2:0], 1'b0}:{1'b0,stage_shift[3][WIDTH-1:1]}), .y(stage_shift[3]), .s(shift_count[0]), .out(r));
 endmodule
 
