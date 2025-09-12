@@ -33,35 +33,61 @@ endmodule:int_converter_testbench
 
 
 interface int_converter_interface; 
-    bit  [`DATA_WIDTH-1:0] x;
-    bit  [`DATA_WIDTH-1:0] r; 
+    shortint x;
+    bit  [`DATA_WIDTH-1:0] r;
     logic negative; 
     logic zero; 
     logic overflow; 
     logic cout;
 endinterface 
 
-class float16; 
+class float16;
     bit [9:0] mantissa; 
     bit [4:0] exponent; 
     bit sign;
+
     function new(bit [15:0] float_val); 
         mantissa = float_val[9:0]; 
         exponent = float_val[14:10]; 
-        sign = float_val[15]; 
-    endfunction:new
+        sign     = float_val[15]; 
+    endfunction : new
 
     function real convert_to_real(); 
-    bit [51:0] real_mantissa;
-    bit [10:0] real_exponent;
-    bit real_sign = sign;
-    real result;
+        bit implicit_leading_one;
+        int real_exponent;
+        real frac, result;
+
+        // Special cases
+        if (exponent == 5'b0 && mantissa == 10'b0) begin
+            return sign ? -0.0 : 0.0;
+        end else if (exponent == 5'b11111 && mantissa == 10'b0) begin
+            return sign ? -1.0/0.0 : 1.0/0.0; // ±inf
+        end else if (exponent == 5'b11111 && mantissa != 10'b0) begin
+            return 0.0/0.0; // NaN
+        end
+
+        // Normal/denormal
+        if (exponent == 0) begin
+            real_exponent = -14; // denormal exponent
+            implicit_leading_one = 0;
+        end else begin
+            real_exponent = exponent - 15; // re-bias
+            implicit_leading_one = 1;
+        end
+
+        // Fraction = implicit + mantissa/1024.0
+        frac = implicit_leading_one + (mantissa / 1024.0);
+
+        // Final result
+        result = (sign ? -1.0 : 1.0) * (2.0 ** real_exponent) * frac;
+        return result;
+    endfunction : convert_to_real
+endclass : float16
 
 
-endclass: float16
 
 class transaction; 
-    rand bit  [`DATA_WIDTH-1:0] x;
+    rand shortint  x;
     bit  [`DATA_WIDTH-1:0] r; 
     logic negative; 
     logic zero; 
@@ -69,11 +95,11 @@ class transaction;
     logic cout;
 
 
+
     function void display();
-        if(this.signed_unsigned)
-            $display("x = %0d, y = %0d, signed_unsigned = %0b, overflow = %0b, negative = %0b, zero = %0b, cout = %0b, r = %0d", signed_x, signed_y, signed_unsigned, overflow, negative, zero, cout, signed_r);
-        else 
-            $display("x = %0d, y = %0d, signed_unsigned = %0b, overflow = %0b, negative = %0b, zero = %0b, cout = %0b, r = %0d", x, y, signed_unsigned, overflow, negative, zero, cout, r);
+        float16 r_float = new(r);
+        real r_real = r_float.convert_to_real();
+            $display("x = %0d, r = %0d,  overflow = %0b, negative = %0b, zero = %0b, cout = %0b", x, r_real, overflow, negative, zero, cout);
     endfunction:display
 
 endclass: transaction 
@@ -82,7 +108,7 @@ endclass: transaction
 class generator; 
     mailbox gen_drv; 
     int samples;
-    transaction multiplier_transaction;  
+    transaction int_conv_transaction;  
 
     function new(mailbox gen_drv, int samples); 
         this.gen_drv = gen_drv; 
@@ -92,9 +118,9 @@ class generator;
     task run(); 
         repeat(samples)
             begin
-                multiplier_transaction = new(); 
-                assert(multiplier_transaction.randomize()); 
-                gen_drv.put(multiplier_transaction); 
+                int_conv_transaction = new(); 
+                assert(int_conv_transaction.randomize()); 
+                gen_drv.put(int_conv_transaction); 
             end
     endtask 
 
@@ -104,24 +130,21 @@ endclass:generator
 class driver; 
     mailbox gen_drv; 
     int samples; 
-    virtual multiplier_interface mult_inf; 
-    
+    virtual int_converter_interface int_conv_inf; 
 
-  function new(mailbox gen_drv, int samples, virtual multiplier_interface mult_inf);
+
+  function new(mailbox gen_drv, int samples, virtual int_converter_interface int_conv_inf);
         this.samples = samples; 
-    this.gen_drv = gen_drv;
-        this.mult_inf = mult_inf; 
+        this.gen_drv = gen_drv;
+        this.int_conv_inf = int_conv_inf; 
     endfunction:new
 
     task run();
         repeat(samples)
         begin
-             
-          	transaction multiplier_transaction; 
-            gen_drv.get(multiplier_transaction); 
-            mult_inf.x = multiplier_transaction.x; 
-            mult_inf.y = multiplier_transaction.y; 
-            mult_inf.signed_unsigned = multiplier_transaction.signed_unsigned; 
+          	transaction int_conv_transaction; 
+            gen_drv.get(int_conv_transaction); 
+            int_conv_inf.x = int_conv_transaction.x; 
             #10; //wait 10 for DUT to process outputs  
         end
     endtask:run
@@ -132,11 +155,11 @@ endclass: driver
 class monitor; 
     mailbox mon_sb; 
     int samples; 
-    virtual multiplier_interface mult_inf; 
-     
-    
-    function new(virtual multiplier_interface mult_inf, int samples, mailbox mon_sb); 
-        this.mult_inf = mult_inf; 
+    virtual int_converter_interface int_conv_inf; 
+
+
+    function new(virtual int_converter_interface int_conv_inf, int samples, mailbox mon_sb); 
+        this.int_conv_inf = int_conv_inf; 
         this.samples = samples; 
         this.mon_sb = mon_sb; 
     endfunction:new
@@ -144,19 +167,17 @@ class monitor;
     task run(); 
         repeat(samples)
         begin
-            transaction multiplier_transaction;
-            multiplier_transaction = new(); 
+            transaction int_conv_transaction;
+            int_conv_transaction = new(); 
             #11; 
-            multiplier_transaction.x = mult_inf.x; 
-            multiplier_transaction.y = mult_inf.y; 
-            multiplier_transaction.signed_unsigned = mult_inf.signed_unsigned; 
-            multiplier_transaction.r = mult_inf.r; 
-            multiplier_transaction.negative = mult_inf.negative; 
-            multiplier_transaction.zero = mult_inf.zero; 
-            multiplier_transaction.overflow = mult_inf.overflow; 
-            multiplier_transaction.cout = mult_inf.cout; 
-            mon_sb.put(multiplier_transaction); 
-          
+            int_conv_transaction.x = int_conv_inf.x; 
+            int_conv_transaction.r = int_conv_inf.r; 
+            int_conv_transaction.negative = int_conv_inf.negative; 
+            int_conv_transaction.zero = int_conv_inf.zero; 
+            int_conv_transaction.overflow = int_conv_inf.overflow; 
+            int_conv_transaction.cout = int_conv_inf.cout; 
+            mon_sb.put(int_conv_transaction); 
+
         end
     endtask:run
 
@@ -166,85 +187,64 @@ endclass: monitor
 class scoreboard; 
     mailbox mon_sb;
     int samples;
-    transaction multiplier_transaction;
-    //DUT output values
+    transaction int_conv_transaction;
+
+    // DUT output
     shortint signed_x; 
-    shortint signed_y;
-    int signed_r;
-    bit [(`DATA_WIDTH*2)-1:0] unsigned_r;
-    bit [`DATA_WIDTH-1:0] unsigned_x;
-    bit [`DATA_WIDTH-1:0] unsigned_y;
-    bit overflow;
-    bit negative;
-    bit zero;
-    bit cout;
-    //expected values
-    shortint expected_signed_x; 
-    shortint expected_signed_y;
-    int expected_signed_r;
-    bit [(`DATA_WIDTH*2)-1:0] expected_unsigned_r;
-    bit [`DATA_WIDTH-1:0] expected_unsigned_x;
-    bit [`DATA_WIDTH-1:0] expected_unsigned_y;
-    bit expected_overflow;
-    bit expected_negative;
-    bit expected_zero;
-    bit expected_cout;
+    bit [`DATA_WIDTH-1:0] r;
+    float16 r_float;
+    real r_real; 
+    bit overflow, negative, zero, cout;
+
+    // Expected
+    shortint expected_x; 
+    real expected_r; 
+    bit expected_overflow, expected_negative, expected_zero, expected_cout;
 
     function new(mailbox mon_sb, int samples); 
         this.mon_sb = mon_sb; 
         this.samples = samples; 
-    endfunction:new
+    endfunction : new
 
     task run(); 
-        repeat(samples)
-        begin
-            mon_sb.get(multiplier_transaction); 
-            //golden model
-            $cast(signed_x,multiplier_transaction.x);
-            $cast(signed_y,multiplier_transaction.y);
-            $cast(signed_r,multiplier_transaction.r);
-            unsigned_x = multiplier_transaction.x;
-            unsigned_y = multiplier_transaction.y;
-            unsigned_r = multiplier_transaction.r;
-            overflow = multiplier_transaction.overflow;
-            negative = multiplier_transaction.negative;
-            zero = multiplier_transaction.zero;
-            cout = multiplier_transaction.cout;
+        repeat(samples) begin
+            mon_sb.get(int_conv_transaction); 
 
-            if(multiplier_transaction.signed_unsigned) begin
-                expected_signed_r = signed_x * signed_y; 
-                expected_negative = (expected_signed_r < 0); 
-                expected_zero = (expected_signed_r == 0); 
-                
-            end else begin
-                expected_unsigned_r = unsigned_x * unsigned_y; 
-                expected_negative = 1'b0; //not used in unsigned multiplication
-                expected_zero = (expected_unsigned_r == 0); 
-            end
-            expected_overflow = 1'b0; //overflow not used in multiplication
-            expected_cout = 1'b0; //not used in signed multiplication
-            multiplier_transaction.display(); 
+            // DUT output
+            signed_x = int_conv_transaction.x;
+            r        = int_conv_transaction.r;
+            r_float  = new(r);
+            r_real   = r_float.convert_to_real();
+            overflow = int_conv_transaction.overflow;
+            negative = int_conv_transaction.negative;
+            zero     = int_conv_transaction.zero;
+            cout     = int_conv_transaction.cout;
 
-            //compare DUT output with expected values
-            if(multiplier_transaction.signed_unsigned) begin
-                if(expected_signed_r !== signed_r)
-                    $error("Signed multiplication result mismatch: DUT r = %0d, expected r = %0d", signed_r, expected_signed_r);
-            end else begin
-                if(expected_unsigned_r !== unsigned_r) 
-                    $error("Unsigned multiplication result mismatch: DUT r = %0d, expected r = %0d", unsigned_r, expected_unsigned_r);
-            end
+            // Golden model
+            expected_x        = signed_x;
+            expected_r        = expected_x; // direct cast to real
+            expected_negative = (expected_r < 0);
+            expected_zero     = (expected_r == 0);
+            expected_overflow = 1'b0; // TODO: implement overflow modeling if needed
+            expected_cout     = 1'b0;
+
+            int_conv_transaction.display();
+
+            // Compare results
+            if ((expected_r - r_real > 1e-6)|| (expected_r - r_real < -1e-6))
+                $error("Int→Float result mismatch: DUT r = %0f, expected r = %0f", r_real, expected_r);
             if (expected_negative !== negative)
-                    $error("Signed multiplication negative flag mismatch: DUT negative = %0b, expected negative = %0b", negative, expected_negative);
+                $error("Int→Float negative flag mismatch: DUT negative = %0b, expected = %0b", negative, expected_negative);
             if (expected_zero !== zero) 
-                    $error("Signed multiplication zero flag mismatch: DUT zero = %0b, expected zero = %0b", zero, expected_zero);
+                $error("Int→Float zero flag mismatch: DUT zero = %0b, expected = %0b", zero, expected_zero);
             if (expected_overflow !== overflow)
-                    $error("Signed multiplication overflow flag mismatch: DUT overflow = %0b, expected overflow = %0b", overflow, expected_overflow);
+                $error("Int→Float overflow flag mismatch: DUT overflow = %0b, expected = %0b", overflow, expected_overflow);
             if (expected_cout !== cout) 
-                    $error("Signed multiplication cout flag mismatch: DUT cout = %0b, expected cout = %0b", cout, expected_cout);
-          
+                $error("Int→Float cout flag mismatch: DUT cout = %0b, expected = %0b", cout, expected_cout);
         end
-    endtask:run
-endclass:scoreboard
+    endtask : run
+endclass : scoreboard
+
 
 class environment; 
     mailbox gen_drv;
@@ -256,18 +256,18 @@ class environment;
     monitor mon; 
     scoreboard sb; 
 
-    virtual multiplier_interface mult_inf;
+    virtual int_converter_interface int_conv_inf;
 
-    function new(virtual multiplier_interface mult_inf, int samples); 
-        this.mult_inf = mult_inf; 
+    function new(virtual int_converter_interface int_conv_inf, int samples); 
+        this.int_conv_inf = int_conv_inf; 
         this.samples = samples; 
 
         gen_drv = new(); 
         mon_sb = new(); 
 
         gen = new(gen_drv, samples); 
-        drv = new(gen_drv, samples, mult_inf); 
-        mon = new(mult_inf, samples, mon_sb); 
+        drv = new(gen_drv, samples, int_conv_inf); 
+        mon = new(int_conv_inf, samples, mon_sb); 
         sb = new(mon_sb, samples); 
     endfunction:new
 
@@ -283,13 +283,13 @@ class environment;
 endclass:environment
 
 
-program test (multiplier_interface mult_inf); 
+program test (int_converter_interface int_conv_inf); 
     int samples = 10;
     environment env; 
    
 
     initial begin
-        env = new(mult_inf, samples); 
+        env = new(int_conv_inf, samples); 
         env.run();
     end
 
