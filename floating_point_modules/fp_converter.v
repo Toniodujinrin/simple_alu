@@ -31,7 +31,7 @@ module fp_converter(x,r,negative,cout,overflow,zero, inf , nan, subnormal);
 	assign r = special_case? special_case_result: signed_normal_int; 
 	assign negative = r[15]; 
 	assign cout = 1'b0; 
-	assign overflow = special_case_overflow | unsigned_normal_int[15];   //overflow if unsigned integer MSB is 1. 
+	assign overflow = special_case_overflow;   //overflow if unsigned integer MSB is 1. 
 	assign zero= ~|r; 
 	
 
