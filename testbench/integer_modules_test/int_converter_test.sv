@@ -71,7 +71,7 @@ class float16;
             real_exponent = -14; // denormal exponent
             implicit_leading_one = 0;
         end else begin
-            real_exponent = exponent - 15; // re-bias
+            real_exponent = exponent - 15; // normal-bias
             implicit_leading_one = 1;
         end
 
@@ -79,7 +79,7 @@ class float16;
         frac = implicit_leading_one + (mantissa / 1024.0);
 
         // Final result
-        result = (sign ? -1.0 : 1.0) * (2.0 ** real_exponent) * frac;
+        result = (sign ? -1 : 1) * (2 ** real_exponent) * frac;
         return result;
     endfunction : convert_to_real
 endclass : float16
@@ -99,7 +99,7 @@ class transaction;
     function void display();
         float16 r_float = new(r);
         real r_real = r_float.convert_to_real();
-      $display("x = %0d, r = %0d, r_raw = %0b  overflow = %0b, negative = %0b, zero = %0b, cout = %0b", x, r_real,r, overflow, negative, zero, cout);
+      $display("x = %0d, r = %0d, r_raw = %0b,  overflow = %0b, negative = %0b, zero = %0b, cout = %0b", x, r_real,r, overflow, negative, zero, cout);
     endfunction:display
 
 endclass: transaction 
@@ -153,7 +153,7 @@ endclass: driver
 
 
 class monitor; 
-    mailbox mon_sb; 
+    mailbox mon_sb; n-
     int samples; 
     virtual int_converter_interface int_conv_inf; 
 
@@ -231,7 +231,7 @@ class scoreboard;
             int_conv_transaction.display();
 
             // Compare results
-          if ((expected_r - r_real > 8)|| (expected_r - r_real < -8)) //use an accuracy of +-8 for float comparison
+          if ((expected_r - r_real > 8)|| (expected_r - r_real < -8)) //use an accuracy of ±8 for float comparison
                 $error("Int→Float result mismatch: DUT r = %0f, expected r = %0f", r_real, expected_r);
             if (expected_negative !== negative)
                 $error("Int→Float negative flag mismatch: DUT negative = %0b, expected = %0b", negative, expected_negative);
