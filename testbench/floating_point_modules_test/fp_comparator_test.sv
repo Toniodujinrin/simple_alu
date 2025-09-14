@@ -75,7 +75,7 @@ class transaction;
         y_real = y_float16.convert_to_real(); 
 
 
-        $display("x_raw = %016b, x_real = %9.2f, x_float16 = %9.2f  y_raw = %016b, y_real = %9.2f, y_float16 = %9.2f, signed_unsigned = %0b, overflow = %0b, negative = %0b, zero = %0b, cout = %0b", x, x_real, x_float16, y, y_real, y_float16, signed_unsigned, overflow, negative, zero, cout);
+      $display("x_raw = %016b, x_real = %9.2f,  y_raw = %016b, y_real = %9.2f, overflow = %0b, negative = %0b, zero = %0b, cout = %0b, subnormal = %0b, inf = %0b, nan = %0b", x, x_real, y, y_real, overflow, negative, zero, cout, subnormal, inf, nan);
     endfunction : display
 endclass : transaction
 
@@ -154,6 +154,8 @@ class scoreboard;
     logic [`DATA_WIDTH-1:0] x;
     logic [`DATA_WIDTH-1:0] y;
     float16 x_float16, y_float16;
+  	logic x_float16_inf, x_float16_nan, x_float16_subnormal; 
+    logic y_float16_inf, y_float16_nan, y_float16_subnormal; 
     real x_real, y_real;
     logic overflow; 
     logic negative;

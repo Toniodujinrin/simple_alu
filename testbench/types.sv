@@ -14,7 +14,7 @@ class float16;
     bit [9:0] mantissa; 
     bit [4:0] exponent; 
     bit sign;
-    bit is_inf; \
+    bit is_inf;
     bit is_nan; 
     bit is_subnormal; 
 
