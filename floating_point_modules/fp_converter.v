@@ -93,7 +93,7 @@ module special_case_converter(x,special_case, special_case_result, special_case_
 			else if ((~x_exponent[4]) & (&x_exponent[3:0])) //decimal = 1.XXX ; truncates to 1 as integer; occurs when exponent = 01111
 				begin
 					special_case = 1'b1; 
-					special_case_result = 16'd1; 
+					special_case_result = x_sign ? 16'hFFFF : 16'h0001;
 					special_case_overflow = 1'b0; 
 					inf = 1'b0; 
 					nan = 1'b0; 

@@ -6,6 +6,10 @@
 `define DATA_WIDTH 16
 `endif 
 
+`include "types.sv"
+
+import types_pkg::*; 
+
 module int_converter_testbench; 
     int_converter_interface int_inf(); 
     test tst(int_inf); 
@@ -40,50 +44,6 @@ interface int_converter_interface;
     logic overflow; 
     logic cout;
 endinterface 
-
-class float16;
-    bit [9:0] mantissa; 
-    bit [4:0] exponent; 
-    bit sign;
-
-    function new(bit [15:0] float_val); 
-        mantissa = float_val[9:0]; 
-        exponent = float_val[14:10]; 
-        sign     = float_val[15]; 
-    endfunction : new
-
-    function real convert_to_real(); 
-        bit implicit_leading_one;
-        int real_exponent;
-        real frac, result;
-
-        // Special cases
-        if (exponent == 5'b0 && mantissa == 10'b0) begin
-            return sign ? -0.0 : 0.0;
-        end else if (exponent == 5'b11111 && mantissa == 10'b0) begin
-            return sign ? -1.0/0.0 : 1.0/0.0; // ±inf
-        end else if (exponent == 5'b11111 && mantissa != 10'b0) begin
-            return 0.0/0.0; // NaN
-        end
-
-        // Normal/denormal
-        if (exponent == 0) begin
-            real_exponent = -14; // denormal exponent
-            implicit_leading_one = 0;
-        end else begin
-            real_exponent = exponent - 15; // normal-bias
-            implicit_leading_one = 1;
-        end
-
-        // Fraction = implicit + mantissa/1024.0
-        frac = implicit_leading_one + (mantissa / 1024.0);
-
-        // Final result
-        result = (sign ? -1 : 1) * (2 ** real_exponent) * frac;
-        return result;
-    endfunction : convert_to_real
-endclass : float16
-
 
 
 class transaction; 
