@@ -74,7 +74,7 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero, inf
 	//cpsr status bits 
 	assign negative = r[15]; 
 	assign zero = ~|r[14:0]; 
-	assign cout = 0; 
+	assign cout = 1'b0; 
 	assign overflow = exponent_rounder_carry_out | normalized_exponent == 5'b11111;
 	assign subnormal = (~|r[14:10]) & (|r[9:0]); 
 	assign inf = (&r[14:0]) & (~|r[9:0]); 

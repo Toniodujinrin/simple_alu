@@ -16,7 +16,7 @@ class float16;
     bit sign;
     bit is_inf;
     bit is_nan; 
-    bit is_subnormal; 
+    bit is_subnormal;    
 
     function new(bit [15:0] float_val); 
         mantissa = float_val[9:0]; 
@@ -111,6 +111,25 @@ class float16;
         return result;
     endfunction : convert_to_real
 endclass : float16
+
+class generator; 
+    mailbox gen_drv; 
+    int samples;
+    
+    transaction tr;
+    function new(mailbox mbx, int samples); 
+        this.gen_drv = mbx;
+        this.samples = samples;
+    endfunction : new
+
+    task run(); 
+        repeat (samples) begin
+            tr = new();
+            assert(tr.randomize());
+            gen_drv.put(tr);
+        end
+    endtask : run
+endclass : generator
 
 endpackage : types_pkg
 
