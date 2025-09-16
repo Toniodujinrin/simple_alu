@@ -275,7 +275,7 @@ module complimenter_2(x, r, enable);
 	wire [WIDTH-1:0] x_2_compliment; 
 	wire [WIDTH-1:0] temp_cout; 
 	assign neg_x = ~x; 
-	carry_look_adder#(.WIDTH(WIDTH)) ADDER(.x(neg_x),.y({WIDTH{1'b0}}),.cin({{(WIDTH-1){1'b0}},1'b1}),.s(x_2_compliment),.cout(temp_cout)); //ideally temp cout should be zero, hence not passed as output 
+	carry_look_adder#(.WIDTH(WIDTH)) ADDER(.x(neg_x),.y({WIDTH{1'b0}}),.cin(1'b1),.s(x_2_compliment),.cout(temp_cout)); //ideally temp cout should be zero, hence not passed as output 
 	assign r = enable?x_2_compliment:x; 
 endmodule 
 	
@@ -285,8 +285,8 @@ module crossbar_switch (x1,x2,y1,y2,s);
 	input [WIDTH-1:0] x1,x2; 
 	output [WIDTH-1:0] y1,y2; 
 	input s; 
-	mux MUX1(.x(x1),.y(x2),.s(s),.out(y2)); 
-   mux MUX2(.x(x2),.y(x1),.s(s),.out(y1)); 
+    chained_mux #(.WIDTH(WIDTH)) MUX1 (.x(x1), .y(x2), .s(s), .out(y2));
+    chained_mux #(.WIDTH(WIDTH)) MUX2 (.x(x2), .y(x1), .s(s), .out(y1));
 endmodule	
 
 //right or left barrel shifter 5bit shift count 

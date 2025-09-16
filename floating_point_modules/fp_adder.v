@@ -86,7 +86,7 @@ endmodule
 
 //half precision rounding module
 module round_to_nearest_even_13 (in, out, carry_out);
-	 input wire [12:0] in; // normalized mantissa: [12] = implicit bit, [11:2] = mantissa, [2:0] = guard, round, sticky
+	input wire [12:0] in; // normalized mantissa: [12] = implicit bit, [11:2] = mantissa, [2:0] = guard, round, sticky
     output wire [9:0] out;  // rounded 10-bit mantissa
     output wire carry_out; // set if rounding causes mantissa overflow
     wire guard = in[1];
