@@ -112,11 +112,11 @@ class float16;
     endfunction : convert_to_real
 endclass : float16
 
-class generator; 
+class generator #(type T); 
     mailbox gen_drv; 
     int samples;
-    
-    transaction tr;
+    T tr;
+
     function new(mailbox mbx, int samples); 
         this.gen_drv = mbx;
         this.samples = samples;
@@ -130,6 +130,36 @@ class generator;
         end
     endtask : run
 endclass : generator
+
+class environment #(type transaction_type, type driver_type, type generator_type, type monitor_type, type scoreboard_type, type interface_type); 
+    mailbox gen_drv;
+    mailbox mon_score;
+    generator_type gen;
+    driver_type drv;
+    monitor_type mon;
+    scoreboard_type score;
+    interface_type DUT_if;
+    int samples;
+    function new(interface_type DUT_if, int samples); 
+        this.DUT_if = DUT_if;
+        this.samples = samples;
+        gen_drv = new();
+        mon_score = new();
+        gen = new(gen_drv, samples);
+        drv = new(adder_if, gen_drv, samples);
+        mon = new(adder_if, mon_score, samples);
+        score = new(mon_score, samples);
+    endfunction : new
+
+    task run(); 
+        fork
+            gen.run();
+            drv.run();
+            mon.run();
+            score.run();
+        join
+    endtask : run
+endclass : environment
 
 endpackage : types_pkg
 

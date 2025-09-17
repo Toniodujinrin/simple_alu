@@ -72,28 +72,6 @@ class transaction;
 endclass: transaction 
 
 
-class generator; 
-    mailbox gen_drv; 
-    int samples;
-    transaction multiplier_transaction;  
-
-    function new(mailbox gen_drv, int samples); 
-        this.gen_drv = gen_drv; 
-        this.samples = samples; 
-    endfunction: new
-
-    task run(); 
-        repeat(samples)
-            begin
-                multiplier_transaction = new(); 
-                assert(multiplier_transaction.randomize()); 
-                gen_drv.put(multiplier_transaction); 
-            end
-    endtask 
-
-endclass:generator
-
-
 class driver; 
     mailbox gen_drv; 
     int samples; 
@@ -239,47 +217,11 @@ class scoreboard;
     endtask:run
 endclass:scoreboard
 
-class environment; 
-    mailbox gen_drv;
-    mailbox mon_sb; 
-    int samples; 
-
-    generator gen; 
-    driver drv; 
-    monitor mon; 
-    scoreboard sb; 
-
-    virtual multiplier_interface mult_inf;
-
-    function new(virtual multiplier_interface mult_inf, int samples); 
-        this.mult_inf = mult_inf; 
-        this.samples = samples; 
-
-        gen_drv = new(); 
-        mon_sb = new(); 
-
-        gen = new(gen_drv, samples); 
-        drv = new(gen_drv, samples, mult_inf); 
-        mon = new(mult_inf, samples, mon_sb); 
-        sb = new(mon_sb, samples); 
-    endfunction:new
-
-    task run(); 
-        fork
-            gen.run();
-            drv.run();
-            mon.run();
-            sb.run();
-        join
-    endtask:run
-
-endclass:environment
-
 
 program test (multiplier_interface mult_inf); 
     int samples = 10;
-    environment env; 
-   
+    typedef generator #(multiplier_interface) multiplier_generator_t;
+    environment #(transaction, driver, multiplier_generator_t, monitor, scoreboard, multiplier_interface) env; 
 
     initial begin
         env = new(mult_inf, samples); 

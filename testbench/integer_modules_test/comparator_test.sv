@@ -5,6 +5,9 @@
 `define DATA_WIDTH 16
 `endif
 
+`include "types.sv"
+import types_pkg::*;
+
 module comparator_testbench;
 
     comparator_if  comp_if();
@@ -67,24 +70,7 @@ class transaction;
     endfunction : display
 endclass : transaction
 
-class generator; 
-    mailbox gen_drv; 
-    int samples;
-    
-    transaction tr;
-    function new(mailbox mbx, int samples); 
-        this.gen_drv = mbx;
-        this.samples = samples;
-    endfunction : new
 
-    task run(); 
-        repeat (samples) begin
-            tr = new();
-            assert(tr.randomize());
-            gen_drv.put(tr);
-        end
-    endtask : run
-endclass : generator
 
 class driver; 
     virtual comparator_if comp_if;
@@ -204,39 +190,11 @@ class scoreboard;
 endclass : scoreboard
 
 
-class environment; 
-    mailbox gen_drv;
-    mailbox mon_score;
-    generator gen;
-    driver drv;
-    monitor mon;
-    scoreboard score;
-    virtual comparator_if comp_if;
-    int samples;
-    function new(virtual comparator_if comp_if, int samples); 
-        this.comp_if = comp_if;
-        this.samples = samples;
-        gen_drv = new();
-        mon_score = new();
-        gen = new(gen_drv, samples);
-        drv = new(comp_if, gen_drv, samples);
-        mon = new(comp_if, mon_score, samples);
-        score = new(mon_score, samples);
-    endfunction : new
-
-    task run(); 
-        fork
-            gen.run();
-            drv.run();
-            mon.run();
-            score.run();
-        join
-    endtask : run
-endclass : environment
 
 program test(comparator_if comp_if);
     int samples = 500;
-    environment env;
+    typedef generator #(comparator_if) comparator_generator_t;
+    environment #(transaction, driver, comparator_generator_t, monitor, scoreboard, comparator_if) env; 
     initial begin
         env = new(comp_if, samples);
         env.run();

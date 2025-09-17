@@ -9,6 +9,10 @@
 `define SHIFT_WIDTH $clog2(16)
 `endif 
 
+`include "types.sv"
+
+import types_pkg::*;
+
 module shifter_testbench;
 
     shifter_if  shift_if();
@@ -77,24 +81,6 @@ class transaction;
     endfunction : display
 endclass : transaction
 
-class generator; 
-    mailbox gen_drv; 
-    int samples;
-    
-    transaction tr;
-    function new(mailbox mbx, int samples); 
-        this.gen_drv = mbx;
-        this.samples = samples;
-    endfunction : new
-
-    task run(); 
-        repeat (samples) begin
-            tr = new();
-            assert(tr.randomize());
-            gen_drv.put(tr);
-        end
-    endtask : run
-endclass : generator
 
 class driver; 
     virtual shifter_if shift_if;
@@ -227,39 +213,12 @@ class scoreboard;
 endclass : scoreboard
 
 
-class environment; 
-    mailbox gen_drv;
-    mailbox mon_score;
-    generator gen;
-    driver drv;
-    monitor mon;
-    scoreboard score;
-    virtual shifter_if shift_if;
-    int samples;
-    function new(virtual shifter_if shift_if, int samples); 
-        this.shift_if = shift_if;
-        this.samples = samples;
-        gen_drv = new();
-        mon_score = new();
-        gen = new(gen_drv, samples);
-        drv = new(shift_if, gen_drv, samples);
-        mon = new(shift_if, mon_score, samples);
-        score = new(mon_score, samples);
-    endfunction : new
 
-    task run(); 
-        fork
-            gen.run();
-            drv.run();
-            mon.run();
-            score.run();
-        join
-    endtask : run
-endclass : environment
 
 program test(shifter_if shift_if);
     int samples = 1000;
-    environment env;
+    typedef generator #(shifter_if) shifter_generator_t;
+    environment #(transaction, driver, shifter_generator_t, monitor, scoreboard, shifter_if) env;
     initial begin
         env = new(shift_if, samples);
         env.run();

@@ -72,24 +72,6 @@ class transaction;
     endfunction : display
 endclass : transaction 
 
-class generator; 
-    mailbox gen_drv; 
-    int samples;
-    transaction fp_conv_transaction;  
-
-    function new(mailbox gen_drv, int samples); 
-        this.gen_drv = gen_drv; 
-        this.samples = samples; 
-    endfunction : new
-
-    task run(); 
-        repeat(samples) begin
-            fp_conv_transaction = new(); 
-            assert(fp_conv_transaction.randomize()); 
-            gen_drv.put(fp_conv_transaction); 
-        end
-    endtask : run
-endclass : generator
 
 class driver; 
     mailbox gen_drv; 
@@ -211,44 +193,12 @@ class scoreboard;
     endtask : run
 endclass : scoreboard
 
-class environment; 
-    mailbox gen_drv;
-    mailbox mon_sb; 
-    int samples; 
 
-    generator gen; 
-    driver drv; 
-    monitor mon; 
-    scoreboard sb; 
-
-    virtual fp_converter_interface fp_conv_inf;
-
-    function new(virtual fp_converter_interface fp_conv_inf, int samples); 
-        this.fp_conv_inf = fp_conv_inf; 
-        this.samples = samples; 
-
-        gen_drv = new(); 
-        mon_sb = new(); 
-
-        gen = new(gen_drv, samples); 
-        drv = new(gen_drv, samples, fp_conv_inf); 
-        mon = new(fp_conv_inf, samples, mon_sb); 
-        sb = new(mon_sb, samples); 
-    endfunction : new
-
-    task run(); 
-        fork
-            gen.run();
-            drv.run();
-            mon.run();
-            sb.run();
-        join
-    endtask : run
-endclass : environment
 
 program test (fp_converter_interface fp_conv_inf); 
     int samples = 1000;
-    environment env; 
+    typedef generator #(fp_converter_interface) fp_converter_generator_t;
+    environment #(transaction, driver, fp_converter_generator_t, monitor, scoreboard, fp_converter_interface) env;
 
     initial begin
         env = new(fp_conv_inf, samples); 

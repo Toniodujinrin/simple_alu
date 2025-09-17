@@ -3,9 +3,10 @@
 `ifndef SIGNED_ADDER_TEST_SV
 `define SIGNED_ADDER_TEST_SV
 
-`ifndef DATA_WIDTH
-`define DATA_WIDTH 16
-`endif
+
+
+`include "types.sv"
+import types_pkg::*;
 
 module signed_adder_testbench;
 
@@ -54,24 +55,6 @@ class transaction;
     endfunction : display
 endclass : transaction
 
-class generator; 
-    mailbox gen_drv; 
-    int samples;
-    
-    transaction tr;
-    function new(mailbox mbx, int samples); 
-        this.gen_drv = mbx;
-        this.samples = samples;
-    endfunction : new
-
-    task run(); 
-        repeat (samples) begin
-            tr = new();
-            assert(tr.randomize());
-            gen_drv.put(tr);
-        end
-    endtask : run
-endclass : generator
 
 class driver; 
     virtual signed_adder_if adder_if;
@@ -182,39 +165,12 @@ class scoreboard;
 endclass : scoreboard
 
 
-class environment; 
-    mailbox gen_drv;
-    mailbox mon_score;
-    generator gen;
-    driver drv;
-    monitor mon;
-    scoreboard score;
-    virtual signed_adder_if adder_if;
-    int samples;
-    function new(virtual signed_adder_if adder_if, int samples); 
-        this.adder_if = adder_if;
-        this.samples = samples;
-        gen_drv = new();
-        mon_score = new();
-        gen = new(gen_drv, samples);
-        drv = new(adder_if, gen_drv, samples);
-        mon = new(adder_if, mon_score, samples);
-        score = new(mon_score, samples);
-    endfunction : new
 
-    task run(); 
-        fork
-            gen.run();
-            drv.run();
-            mon.run();
-            score.run();
-        join
-    endtask : run
-endclass : environment
 
 program test(signed_adder_if adder_if);
     int samples = 100;
-    environment env;
+    typedef generator #(signed_adder_if) adder_generator_t;
+    environment #(transaction, driver, adder_generator_t, monitor, scoreboard, signed_adder_if) env;
     initial begin
         env = new(adder_if, samples);
         env.run();
