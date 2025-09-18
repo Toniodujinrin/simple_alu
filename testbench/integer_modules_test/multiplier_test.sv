@@ -1,9 +1,9 @@
 `ifndef MULTIPLIER_TEST_SV 
 `define MULTIPLIER_TEST_SV
 
-`ifndef DATA_WIDTH
-`define DATA_WIDTH 16
-`endif 
+`include "types.sv"
+
+import types_pkg::*;
 
 module multiplier_testbench; 
     multiplier_interface mult_inf(); 
@@ -220,8 +220,9 @@ endclass:scoreboard
 
 program test (multiplier_interface mult_inf); 
     int samples = 10;
-    typedef generator #(multiplier_interface) multiplier_generator_t;
-    environment #(transaction, driver, multiplier_generator_t, monitor, scoreboard, multiplier_interface) env; 
+    typedef virtual multiplier_interface multiplier_interface_vt;
+    typedef generator #(transaction) multiplier_generator_t;
+    environment #(transaction, driver, multiplier_generator_t, monitor, scoreboard, multiplier_interface_vt) env;
 
     initial begin
         env = new(mult_inf, samples); 

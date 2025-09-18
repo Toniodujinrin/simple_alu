@@ -1,16 +1,11 @@
 `ifndef SHIFTER_TEST_SV
 `define SHIFTER_TEST_SV
 
-`ifndef DATA_WIDTH
-`define DATA_WIDTH 16
-`endif
-
 `ifndef SHIFT_WIDTH
 `define SHIFT_WIDTH $clog2(16)
 `endif 
 
 `include "types.sv"
-
 import types_pkg::*;
 
 module shifter_testbench;
@@ -48,7 +43,7 @@ interface shifter_if;
     logic [`DATA_WIDTH-1:0] y; //output
 
     logic [2:0] mode; // 3-bit mode for different shift operations
-  logic [`SHIFT_WIDTH-1:0] shift_count; // 5-bit shift count
+    logic [`SHIFT_WIDTH-1:0] shift_count; // 5-bit shift count
     logic overflow;
     logic negative;
     logic zero;
@@ -139,7 +134,7 @@ class scoreboard;
     logic [`DATA_WIDTH-1:0] x;
     logic [`DATA_WIDTH-1:0] y;
     logic [2:0] mode; // 3-bit mode for different shift operations
-  logic [`SHIFT_WIDTH-1:0] shift_count; // 5-bit shift count
+    logic [`SHIFT_WIDTH-1:0] shift_count; // 5-bit shift count
     logic overflow; 
     logic negative; 
     logic zero; 
@@ -217,8 +212,9 @@ endclass : scoreboard
 
 program test(shifter_if shift_if);
     int samples = 1000;
-    typedef generator #(shifter_if) shifter_generator_t;
-    environment #(transaction, driver, shifter_generator_t, monitor, scoreboard, shifter_if) env;
+    typedef virtual shifter_if shifter_if_vt;
+    typedef generator #(transaction) shifter_generator_t;
+    environment #(transaction, driver, shifter_generator_t, monitor, scoreboard, shifter_if_vt) env;
     initial begin
         env = new(shift_if, samples);
         env.run();

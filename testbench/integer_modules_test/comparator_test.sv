@@ -193,8 +193,9 @@ endclass : scoreboard
 
 program test(comparator_if comp_if);
     int samples = 500;
-    typedef generator #(comparator_if) comparator_generator_t;
-    environment #(transaction, driver, comparator_generator_t, monitor, scoreboard, comparator_if) env; 
+    typedef virtual comparator_if comparator_if_vt;
+    typedef generator #(transaction) comparator_generator_t;
+    environment #(transaction, driver, comparator_generator_t, monitor, scoreboard, comparator_if_vt) env;
     initial begin
         env = new(comp_if, samples);
         env.run();

@@ -3,8 +3,6 @@
 `ifndef SIGNED_ADDER_TEST_SV
 `define SIGNED_ADDER_TEST_SV
 
-
-
 `include "types.sv"
 import types_pkg::*;
 
@@ -39,6 +37,8 @@ interface signed_adder_if;
     shortint s;
 endinterface : signed_adder_if
 
+
+
 class transaction; 
     
     rand shortint x;
@@ -60,7 +60,7 @@ class driver;
     virtual signed_adder_if adder_if;
     mailbox gen_drv;
     int samples;
-    function new(virtual signed_adder_if adder_if, mailbox mbx, int samples); 
+  function new(virtual signed_adder_if adder_if, mailbox mbx, int samples); 
         this.adder_if = adder_if;
         this.gen_drv = mbx;
         this.samples = samples;
@@ -73,11 +73,6 @@ class driver;
             adder_if.y = tr.y;
             adder_if.add_sub = tr.add_sub;
             #10; // wait for DUT to process
-            tr.overflow = adder_if.overflow;
-            tr.negative = adder_if.negative;
-            tr.zero = adder_if.zero;
-            tr.cout = adder_if.cout;
-            tr.s = adder_if.s;
         end
 
     endtask : run
@@ -87,7 +82,7 @@ class monitor;
     mailbox mon_score;
     virtual signed_adder_if adder_if;
     int samples;
-    function new(virtual signed_adder_if adder_if, mailbox mbx, int samples); 
+  function new(virtual signed_adder_if adder_if, mailbox mbx, int samples); 
         this.adder_if = adder_if;
         this.mon_score = mbx;
         this.samples = samples;
@@ -156,10 +151,6 @@ class scoreboard;
             if (tr.zero !== expected_zero) begin
                 $error("Mismatch in zero: got %0b, expected %0b", tr.zero, expected_zero);
             end
-//signed adder does not use cout
-//             if (tr.cout !== expected_cout) begin
-//                 $error("Mismatch in cout: got %0b, expected %0b", tr.cout, expected_cout);
-            //end
         end
     endtask : run
 endclass : scoreboard
@@ -169,12 +160,13 @@ endclass : scoreboard
 
 program test(signed_adder_if adder_if);
     int samples = 100;
-    typedef generator #(signed_adder_if) adder_generator_t;
-    environment #(transaction, driver, adder_generator_t, monitor, scoreboard, signed_adder_if) env;
+  	typedef virtual signed_adder_if signed_adder_if_vt; 
+  typedef generator #(transaction) adder_generator_t;
+    environment #(transaction, driver, adder_generator_t, monitor, scoreboard, signed_adder_if_vt) env;
     initial begin
         env = new(adder_if, samples);
         env.run();
     end
-endprogram : test
+endprogram: test
 
 `endif // SIGNED_ADDER_TEST_SV

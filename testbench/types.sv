@@ -112,10 +112,10 @@ class float16;
     endfunction : convert_to_real
 endclass : float16
 
-class generator #(type T); 
+class generator #(type transaction_type); 
     mailbox gen_drv; 
     int samples;
-    T tr;
+    transaction_type tr;
 
     function new(mailbox mbx, int samples); 
         this.gen_drv = mbx;
@@ -146,8 +146,8 @@ class environment #(type transaction_type, type driver_type, type generator_type
         gen_drv = new();
         mon_score = new();
         gen = new(gen_drv, samples);
-        drv = new(adder_if, gen_drv, samples);
-        mon = new(adder_if, mon_score, samples);
+      	drv = new(DUT_if, gen_drv, samples);
+      	mon = new(DUT_if, mon_score, samples);
         score = new(mon_score, samples);
     endfunction : new
 

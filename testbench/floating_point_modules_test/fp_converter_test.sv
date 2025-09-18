@@ -197,8 +197,9 @@ endclass : scoreboard
 
 program test (fp_converter_interface fp_conv_inf); 
     int samples = 1000;
-    typedef generator #(fp_converter_interface) fp_converter_generator_t;
-    environment #(transaction, driver, fp_converter_generator_t, monitor, scoreboard, fp_converter_interface) env;
+    typedef virtual fp_converter_interface fp_converter_interface_vt;
+    typedef generator #(transaction) fp_converter_generator_t;
+    environment #(transaction, driver, fp_converter_generator_t, monitor, scoreboard, fp_converter_interface_vt) env;
 
     initial begin
         env = new(fp_conv_inf, samples); 

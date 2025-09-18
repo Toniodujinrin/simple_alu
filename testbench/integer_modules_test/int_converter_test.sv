@@ -170,7 +170,7 @@ class scoreboard;
             int_conv_transaction.display();
 
             // Compare results
-          if ((expected_r - r_real > 8)|| (expected_r - r_real < -8)) //use an accuracy of ±8 for float comparison
+            if ((expected_r - r_real > 8)|| (expected_r - r_real < -8)) //use an accuracy of ±8 for float comparison
                 $error("Int→Float result mismatch: DUT r = %0f, expected r = %0f", r_real, expected_r);
             if (expected_negative !== negative)
                 $error("Int→Float negative flag mismatch: DUT negative = %0b, expected = %0b", negative, expected_negative);
@@ -187,8 +187,9 @@ endclass : scoreboard
 
 program test (int_converter_interface int_conv_inf); 
     int samples = 1000;
-    typedef generator #(int_converter_interface) int_converter_generator_t;
-    environment #(transaction, driver, int_converter_generator_t, monitor, scoreboard, int_converter_interface) env;
+    typedef virtual int_converter_interface int_converter_interface_vt;
+    typedef generator #(transaction) int_converter_generator_t;
+    environment #(transaction, driver, int_converter_generator_t, monitor, scoreboard, int_converter_interface_vt) env;
 
     initial begin
         env = new(int_conv_inf, samples); 
