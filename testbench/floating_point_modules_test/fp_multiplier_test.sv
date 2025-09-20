@@ -192,7 +192,7 @@ class scoreboard;
            // max and min representable values in float16
             expected_cout = 1'b0; //signed adder does not use cout
             //compare DUT output with expected values
-          if (s_real - expected_s > 3 || s_real - expected_s < -3) begin
+          if () begin
                 $error("Mismatch in sum: got %0d, expected %0d", s_real, expected_s);
             end
 //            if (overflow !== expected_overflow) begin

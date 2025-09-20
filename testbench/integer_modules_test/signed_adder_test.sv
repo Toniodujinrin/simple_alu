@@ -1,5 +1,3 @@
-// Code your testbench here
-// or browse Examples
 `ifndef SIGNED_ADDER_TEST_SV
 `define SIGNED_ADDER_TEST_SV
 
@@ -50,7 +48,7 @@ class transaction;
     logic cout; 
     shortint  s;
 
-    function void display(string class_name); 
+    function void display(); 
         $display("x = %0d, y = %0d, add_sub = %0b, overflow = %0b, negative = %0b, zero = %0b, cout = %0b, s = %0d", x, y, add_sub, overflow, negative, zero, cout, s);
     endfunction : display
 endclass : transaction
@@ -82,7 +80,7 @@ class monitor;
     mailbox mon_score;
     virtual signed_adder_if adder_if;
     int samples;
-  function new(virtual signed_adder_if adder_if, mailbox mbx, int samples); 
+    function new(virtual signed_adder_if adder_if, mailbox mbx, int samples); 
         this.adder_if = adder_if;
         this.mon_score = mbx;
         this.samples = samples;

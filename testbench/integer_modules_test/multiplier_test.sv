@@ -78,9 +78,9 @@ class driver;
     virtual multiplier_interface mult_inf; 
     
 
-  function new(mailbox gen_drv, int samples, virtual multiplier_interface mult_inf);
+  function new(virtual multiplier_interface mult_inf, mailbox gen_drv, int samples);
         this.samples = samples; 
-    this.gen_drv = gen_drv;
+        this.gen_drv = gen_drv;
         this.mult_inf = mult_inf; 
     endfunction:new
 
@@ -106,7 +106,7 @@ class monitor;
     virtual multiplier_interface mult_inf; 
      
     
-    function new(virtual multiplier_interface mult_inf, int samples, mailbox mon_sb); 
+    function new(virtual multiplier_interface mult_inf, mailbox mon_sb, int samples); 
         this.mult_inf = mult_inf; 
         this.samples = samples; 
         this.mon_sb = mon_sb; 

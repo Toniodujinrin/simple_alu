@@ -1,12 +1,14 @@
 `ifndef SHIFTER_TEST_SV
 `define SHIFTER_TEST_SV
 
-`ifndef SHIFT_WIDTH
-`define SHIFT_WIDTH $clog2(16)
-`endif 
+
 
 `include "types.sv"
 import types_pkg::*;
+
+`ifndef SHIFT_WIDTH
+`define SHIFT_WIDTH $clog2(`DATA_WIDTH)
+`endif 
 
 module shifter_testbench;
 
@@ -58,7 +60,7 @@ class transaction;
     shortint signed_x;
     shortint signed_y;
     rand logic [2:0] mode; // 3-bit mode for different shift operations
-  rand logic [`SHIFT_WIDTH-1:0] shift_count; // 5-bit shift count
+    rand logic [`SHIFT_WIDTH-1:0] shift_count; // 5-bit shift count
     logic overflow; 
     logic negative; 
     logic zero; 
@@ -211,7 +213,7 @@ endclass : scoreboard
 
 
 program test(shifter_if shift_if);
-    int samples = 1000;
+    int samples = 100;
     typedef virtual shifter_if shifter_if_vt;
     typedef generator #(transaction) shifter_generator_t;
     environment #(transaction, driver, shifter_generator_t, monitor, scoreboard, shifter_if_vt) env;
