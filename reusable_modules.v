@@ -1,7 +1,4 @@
-
-
-
-	
+//reusable modules	
 module simplified_signed_adder(x, y, add_sub, cout, s);
 	parameter WIDTH = 8; 
 	input [WIDTH-1:0] x, y; 
