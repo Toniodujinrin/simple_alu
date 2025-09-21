@@ -56,7 +56,7 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero, inf
 
 	
 	//Initiate internal modules
-    simple_comparator#(.WIDTH(5))  EXP_COMPARATOR(.x(x_exponent),.y(y_exponent),.gt(temp_gt),.lt(temp_lt),.eq(temp_eq)); //5bit unsigned comparator to compare exponents to see which exponent is larger
+	simple_comparator#(.WIDTH(5))  EXP_COMPARATOR(.x(x_exponent),.y(y_exponent),.gt(temp_gt),.lt(temp_lt),.eq(temp_eq)); //5bit unsigned comparator to compare exponents to see which exponent is larger
 	simple_comparator#(.WIDTH(11)) MANT_COMPARATOR(.x({x_implicit_bit,x_mantisa}), .y({y_implicit_bit,y_mantisa}), .gt(mant_gt), .lt(mant_lt), .eq(mant_eq));
 	assign swap = temp_gt | (temp_eq & mant_gt);
 	crossbar_switch#(.WIDTH(5)) CROSSBAR_1(.x1(x_exponent),.x2(y_exponent),.y1(lesser_exponent),.y2(greater_exponent),.s(swap));
@@ -68,9 +68,9 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero, inf
 	complimenter_2#(.WIDTH(12)) LESSER_COMPLIMENTER(.x({1'b0,aligned_mantisa}),.r(lesser_signed_mantisa), .enable(effective_sub)); 
 	complimenter_2#(.WIDTH(12)) GREATER_COMPLIMENTER(.x({1'b0,greater_mantisa}),.r(greater_signed_mantisa), .enable(1'b0)); 
 	simplified_signed_adder#(.WIDTH(12)) FINAL_ADDER(.x(greater_signed_mantisa), .y(lesser_signed_mantisa), .add_sub(1'b0), .cout(final_adder_carry), .s(final_adder_sum));
-	assign signed_final_sum = {final_adder_carry, final_adder_sum};
-	assign effective_sub = greater_sign ^ lesser_sign; //an effective subtraction occurs when the signs of the two operands are different (true subtraction)
-	assign borrow = (~final_adder_carry) & (~aligned_zero);//borrow occurs when the result is negative, except when the aligned mantisa is zero (in which case result is zero, not negative)
+	assign signed_final_sum = {final_adder_carry & ~effective_sub, final_adder_sum};
+	assign effective_sub = greater_sign ^ lesser_sign;
+	assign borrow = (~final_adder_carry) & (~aligned_zero);
 	assign sum_negative = effective_sub & borrow;
 	complimenter_2#(.WIDTH(13)) SUM_ABS(.x(signed_final_sum), .r(abs_final_sum), .enable(sum_negative));
 	leading_zero_counter_13 LEADING_ZERO_COUNTER(.x(abs_final_sum),.q(normalizer_shift),.a(final_sum_0));
@@ -100,7 +100,6 @@ module fp_adder_subtractor(x, y, r, add_sub, negative, cout, overflow, zero, inf
 endmodule 
 
 
-//half precision rounding module
 //half precision rounding module
 module round_to_nearest_even_13 (in, out, carry_out);
 	input wire [12:0] in; // normalized mantissa: [12] = implicit bit, [11:2] = mantissa, [2:0] = guard, round, sticky

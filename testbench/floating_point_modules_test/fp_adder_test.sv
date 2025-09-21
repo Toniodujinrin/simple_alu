@@ -202,28 +202,28 @@ class scoreboard;
           if (s_real - expected_s > 3 || s_real - expected_s < -3) begin
                 $error("Mismatch in sum: got %0d, expected %0d", s_real, expected_s);
             end
-//            if (overflow !== expected_overflow) begin
-//                 $error("Mismatch in overflow: got %0b, expected %0b", overflow, expected_overflow);
-//             end
-//             if (negative !== expected_negative) begin
-//                 $error("Mismatch in negative: got %0b, expected %0b", negative, expected_negative);
-//             end
-//             if (zero !== expected_zero) begin
-//                 $error("Mismatch in zero: got %0b, expected %0b", zero, expected_zero);
-//             end
-//             if (inf !== expected_inf) begin
-//                 $error("Mismatch in inf: got %0b, expected %0b", inf, expected_inf);
-//             end
-//             if (nan !== expected_nan) begin
-//                 $error("Mismatch in nan: got %0b, expected %0b", nan, expected_nan);
-//             end
-//             if (subnormal !== expected_subnormal) begin
-//                 $error("Mismatch in subnormal: got %0b, expected %0b",
-//                 subnormal, expected_subnormal);
-//             end
-//             if (cout !== expected_cout) begin
-//                 $error("Mismatch in cout: got %0b, expected %0b", cout, expected_cout);
-//             end
+           if (overflow !== expected_overflow) begin
+                $error("Mismatch in overflow: got %0b, expected %0b", overflow, expected_overflow);
+            end
+            if (negative !== expected_negative) begin
+                $error("Mismatch in negative: got %0b, expected %0b", negative, expected_negative);
+            end
+            if (zero !== expected_zero) begin
+                $error("Mismatch in zero: got %0b, expected %0b", zero, expected_zero);
+            end
+            if (inf !== expected_inf) begin
+                $error("Mismatch in inf: got %0b, expected %0b", inf, expected_inf);
+            end
+            if (nan !== expected_nan) begin
+                $error("Mismatch in nan: got %0b, expected %0b", nan, expected_nan);
+            end
+            if (subnormal !== expected_subnormal) begin
+                $error("Mismatch in subnormal: got %0b, expected %0b",
+                subnormal, expected_subnormal);
+            end
+            if (cout !== expected_cout) begin
+                $error("Mismatch in cout: got %0b, expected %0b", cout, expected_cout);
+            end
        end
     endtask : run
 endclass : scoreboard
